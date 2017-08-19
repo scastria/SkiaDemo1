@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>{E7C91A0C-088C-458F-83A3-C313B854B46A}</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>SkiaDemo1</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)App.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)HomePage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SolidColorPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RectanglePage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PrimitivesPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TaskAnimationPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ImagePage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ImageInteractionPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MrGesturesSquaresPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AnnotateFacePage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BoolDrawModeValueConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PolyLabelPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PolyLabel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PriorityQueue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LayerPerformancePage.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)landscape.jpg" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)face.jpg" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)water1.json" />
+  </ItemGroup>
+</Project>
