@@ -3,6 +3,8 @@ using Plugin.EmbeddedResource;
 using SkiaSharp;
 using SkiaSharp.Views.Forms;
 using Xamarin.Forms;
+using System.Reflection;
+using System.Diagnostics;
 
 namespace SkiaDemo1
 {
@@ -24,16 +26,18 @@ namespace SkiaDemo1
 		public LayerPerformancePage()
 		{
 #if __ANDROID__
-            _screenScale = ((Android.App.Activity)Forms.Context).Resources.DisplayMetrics.Density;
+			_screenScale = ((Android.App.Activity)Forms.Context).Resources.DisplayMetrics.Density;
+#elif __IOS__
+            _screenScale = (float)UIKit.UIScreen.MainScreen.Scale;
 #else
-			_screenScale = (float)UIKit.UIScreen.MainScreen.Scale;
+            _screenScale = 1;
 #endif
-			Title = "Layer Performance";
+            Title = "Layer Performance";
 			_canvasV = new SKCanvasView();
 			_canvasV.PaintSurface += HandlePaintCanvas;
 			Content = _canvasV;
 			//Load assets
-			using (var stream = new SKManagedStream(ResourceLoader.GetEmbeddedResourceStream(this.GetType().Assembly, "landscape.jpg"))) {
+			using (var stream = new SKManagedStream(ResourceLoader.GetEmbeddedResourceStream(this.GetType().GetTypeInfo().Assembly, "landscape.jpg"))) {
 				_bitmap = SKBitmap.Decode(stream);
 			}
 			//Interaction
@@ -47,7 +51,7 @@ namespace SkiaDemo1
 
 		private void HandlePan(object sender, PanUpdatedEventArgs puea)
 		{
-			Console.WriteLine(puea.StatusType + " (" + puea.TotalX + "," + puea.TotalY + ")");
+			Debug.WriteLine(puea.StatusType + " (" + puea.TotalX + "," + puea.TotalY + ")");
 			switch (puea.StatusType) {
 			case GestureStatus.Started:
 				_startPanM = _m;
@@ -72,7 +76,7 @@ namespace SkiaDemo1
 
 		private void HandlePinch(object sender, PinchGestureUpdatedEventArgs puea)
 		{
-			Console.WriteLine(puea.Status + " (" + puea.ScaleOrigin.X + "," + puea.ScaleOrigin.Y + ") " + puea.Scale);
+			Debug.WriteLine(puea.Status + " (" + puea.ScaleOrigin.X + "," + puea.ScaleOrigin.Y + ") " + puea.Scale);
 			Point canvasAnchor = new Point(puea.ScaleOrigin.X * _canvasV.Width * _screenScale,
 										   puea.ScaleOrigin.Y * _canvasV.Height * _screenScale);
 			switch (puea.Status) {

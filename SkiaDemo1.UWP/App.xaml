@@ -1,0 +1,8 @@
+﻿<Application
+    x:Class="SkiaDemo1.UWP.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:SkiaDemo1.UWP"
+    RequestedTheme="Light">
+
+</Application>

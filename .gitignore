@@ -3,3 +3,11 @@
 ################################################################################
 
 /.vs/SkiaDemo1/v14/.suo
+/Droid/obj
+/Droid/bin
+/iOS/obj
+/iOS/bin
+/packages
+/SkiaDemo1.UWP/bin
+/SkiaDemo1.UWP/obj
+/SkiaDemo1.UWP/project.lock.json

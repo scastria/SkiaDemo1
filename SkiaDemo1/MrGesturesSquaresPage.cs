@@ -28,11 +28,13 @@ namespace SkiaDemo1
 		public MrGesturesSquaresPage()
 		{
 #if __ANDROID__
-            _screenScale = ((Android.App.Activity)Forms.Context).Resources.DisplayMetrics.Density;
+			_screenScale = ((Android.App.Activity)Forms.Context).Resources.DisplayMetrics.Density;
+#elif __IOS__
+            _screenScale = (float)UIKit.UIScreen.MainScreen.Scale;
 #else
-			_screenScale = (float)UIKit.UIScreen.MainScreen.Scale;
+            _screenScale = 1;
 #endif
-			Title = "Mr. Gestures Squares";
+            Title = "Mr. Gestures Squares";
 			_canvasV = new SKCanvasView();
 			_canvasV.PaintSurface += HandlePaintCanvas;
 			Grid mainG = new Grid();

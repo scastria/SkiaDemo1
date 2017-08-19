@@ -6,6 +6,7 @@ using Plugin.EmbeddedResource;
 using SkiaSharp;
 using SkiaSharp.Views.Forms;
 using Xamarin.Forms;
+using System.Reflection;
 
 namespace SkiaDemo1
 {
@@ -50,9 +51,11 @@ namespace SkiaDemo1
 		public AnnotateFacePage()
 		{
 #if __ANDROID__
-            _screenScale = ((Android.App.Activity)Forms.Context).Resources.DisplayMetrics.Density;
+			_screenScale = ((Android.App.Activity)Forms.Context).Resources.DisplayMetrics.Density;
+#elif __IOS__
+            _screenScale = (float)UIKit.UIScreen.MainScreen.Scale;
 #else
-			_screenScale = (float)UIKit.UIScreen.MainScreen.Scale;
+            _screenScale = 1;
 #endif
 			BindingContext = this;
 			ToolbarItem drawTBI = new ToolbarItem();
@@ -74,7 +77,7 @@ namespace SkiaDemo1
 			drawTBI.SetBinding<AnnotateFacePage>(ToolbarItem.CommandProperty, vm => vm.DrawCommand);
 			clearTBI.SetBinding<AnnotateFacePage>(ToolbarItem.CommandProperty, vm => vm.ClearCommand);
 			//Load assets
-			using (var stream = new SKManagedStream(ResourceLoader.GetEmbeddedResourceStream(this.GetType().Assembly, "face.jpg"))) {
+			using (var stream = new SKManagedStream(ResourceLoader.GetEmbeddedResourceStream(this.GetType().GetTypeInfo().Assembly, "face.jpg"))) {
 				_bitmap = SKBitmap.Decode(stream);
 			}
 			//Interaction

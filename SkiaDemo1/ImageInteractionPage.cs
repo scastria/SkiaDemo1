@@ -4,6 +4,7 @@ using Plugin.EmbeddedResource;
 using SkiaSharp;
 using SkiaSharp.Views.Forms;
 using Xamarin.Forms;
+using System.Reflection;
 
 namespace SkiaDemo1
 {
@@ -25,11 +26,13 @@ namespace SkiaDemo1
 		public ImageInteractionPage()
 		{
 #if __ANDROID__
-            _screenScale = ((Android.App.Activity)Forms.Context).Resources.DisplayMetrics.Density;
+			_screenScale = ((Android.App.Activity)Forms.Context).Resources.DisplayMetrics.Density;
+#elif __IOS__
+            _screenScale = (float)UIKit.UIScreen.MainScreen.Scale;
 #else
-			_screenScale = (float)UIKit.UIScreen.MainScreen.Scale;
+            _screenScale = 1;
 #endif
-			Title = "Image Interaction";
+            Title = "Image Interaction";
 			ToolbarItem rotateTBI = new ToolbarItem {
 				Text = "Rotate"
 			};
@@ -43,7 +46,7 @@ namespace SkiaDemo1
 			mainG.Children.Add(gestureV, 0, 0);
 			Content = mainG;
 			//Load assets
-			using (var stream = new SKManagedStream(ResourceLoader.GetEmbeddedResourceStream(this.GetType().Assembly, "landscape.jpg"))) {
+			using (var stream = new SKManagedStream(ResourceLoader.GetEmbeddedResourceStream(this.GetType().GetTypeInfo().Assembly, "landscape.jpg"))) {
 				_bitmap = SKBitmap.Decode(stream);
 			}
 			//Interaction

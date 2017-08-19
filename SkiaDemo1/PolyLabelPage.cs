@@ -6,6 +6,8 @@ using Plugin.EmbeddedResource;
 using SkiaSharp;
 using SkiaSharp.Views.Forms;
 using Xamarin.Forms;
+using System.Reflection;
+using System.Diagnostics;
 
 namespace SkiaDemo1
 {
@@ -19,7 +21,7 @@ namespace SkiaDemo1
 			SKCanvasView canvasV = new SKCanvasView();
 			canvasV.PaintSurface += HandlePaintCanvas;
 			Content = canvasV;
-			string waterJson = ResourceLoader.GetEmbeddedResourceString(this.GetType().Assembly, "water1.json");
+			string waterJson = ResourceLoader.GetEmbeddedResourceString(this.GetType().GetTypeInfo().Assembly, "water1.json");
 			_waterPoints = JsonConvert.DeserializeObject<float[][][]>(waterJson);
 		}
 
@@ -90,7 +92,7 @@ namespace SkiaDemo1
 					}
 					float[][][] polygon = new float[][][] { ring };
 					float[] labelPos = PolyLabel.GetPolyLabel(polygon);
-					Console.WriteLine("(" + labelPos[0] + "," + labelPos[1] + ")");
+					Debug.WriteLine("(" + labelPos[0] + "," + labelPos[1] + ")");
 					p.Color = SKColors.Red;
 					p.Style = SKPaintStyle.Fill;
 					e.Surface.Canvas.DrawCircle(labelPos[0], labelPos[1], 3, p);
