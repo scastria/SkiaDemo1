@@ -10,10 +10,14 @@ namespace SkiaDemo1
 {
 	public class LayerPerformancePage : ContentPage
 	{
-		private const int CELL_DIM = 15;
+		private const string SELECTION_ANIMATION = "SelectionAnimation";
+		private const int ANIMATION_DURATION = 1000;
+
+        private const int CELL_DIM = 15;
 
 		private SKCanvasView _canvasV = null;
 		private SKMatrix _m = SKMatrix.MakeIdentity();
+		private SKMatrix _im = SKMatrix.MakeIdentity();
 		private SKMatrix _currentTransformM = SKMatrix.MakeIdentity();
 		private SKMatrix _startPanM = SKMatrix.MakeIdentity();
 		private SKMatrix _startPinchM = SKMatrix.MakeIdentity();
@@ -33,6 +37,11 @@ namespace SkiaDemo1
             _screenScale = 1;
 #endif
             Title = "Layer Performance";
+            ToolbarItem resetTBI = new ToolbarItem {
+                Text = "Reset"
+            };
+            resetTBI.Clicked += HandleReset;
+            ToolbarItems.Add(resetTBI);
 			_canvasV = new SKCanvasView();
 			_canvasV.PaintSurface += HandlePaintCanvas;
 			Content = _canvasV;
@@ -47,61 +56,6 @@ namespace SkiaDemo1
 			PinchGestureRecognizer pngr = new PinchGestureRecognizer();
 			pngr.PinchUpdated += HandlePinch;
 			_canvasV.GestureRecognizers.Add(pngr);
-		}
-
-		private void HandlePan(object sender, PanUpdatedEventArgs puea)
-		{
-			Debug.WriteLine(puea.StatusType + " (" + puea.TotalX + "," + puea.TotalY + ")");
-			switch (puea.StatusType) {
-			case GestureStatus.Started:
-				_startPanM = _m;
-				break;
-			case GestureStatus.Running:
-				float canvasTotalX = (float)puea.TotalX * _screenScale;
-				float canvasTotalY = (float)puea.TotalY * _screenScale;
-				SKMatrix canvasTranslation = SKMatrix.MakeTranslation(canvasTotalX, canvasTotalY);
-				SKMatrix.Concat(ref _m, ref canvasTranslation, ref _startPanM);
-				_currentTransformM = canvasTranslation;
-				_canvasV.InvalidateSurface();
-				break;
-			default:
-				_startPanM = SKMatrix.MakeIdentity();
-				//Force textLayer to regenerate
-				_textLayer?.Dispose();
-				_textLayer = null;
-				_canvasV.InvalidateSurface();
-				break;
-			}
-		}
-
-		private void HandlePinch(object sender, PinchGestureUpdatedEventArgs puea)
-		{
-			Debug.WriteLine(puea.Status + " (" + puea.ScaleOrigin.X + "," + puea.ScaleOrigin.Y + ") " + puea.Scale);
-			Point canvasAnchor = new Point(puea.ScaleOrigin.X * _canvasV.Width * _screenScale,
-										   puea.ScaleOrigin.Y * _canvasV.Height * _screenScale);
-			switch (puea.Status) {
-			case GestureStatus.Started:
-				_startPinchM = _m;
-				_startPinchAnchor = canvasAnchor;
-				_totalPinchScale = 1f;
-				break;
-			case GestureStatus.Running:
-				_totalPinchScale *= (float)puea.Scale;
-				SKMatrix canvasScaling = SKMatrix.MakeScale(_totalPinchScale, _totalPinchScale, (float)_startPinchAnchor.X, (float)_startPinchAnchor.Y);
-				SKMatrix.Concat(ref _m, ref canvasScaling, ref _startPinchM);
-				_currentTransformM = canvasScaling;
-				_canvasV.InvalidateSurface();
-				break;
-			default:
-				_startPinchM = SKMatrix.MakeIdentity();
-				_startPinchAnchor = Point.Zero;
-				_totalPinchScale = 1f;
-				//Force textLayer to regenerate
-				_textLayer?.Dispose();
-				_textLayer = null;
-				_canvasV.InvalidateSurface();
-				break;
-			}
 		}
 
 		private void HandlePaintCanvas(object sender, SKPaintSurfaceEventArgs e)
@@ -149,5 +103,95 @@ namespace SkiaDemo1
 				}
 			}
 		}
-	}
+
+		private void HandlePan(object sender, PanUpdatedEventArgs puea)
+		{
+			Debug.WriteLine(puea.StatusType + " (" + puea.TotalX + "," + puea.TotalY + ")");
+			switch (puea.StatusType) {
+			case GestureStatus.Started:
+				_startPanM = _m;
+				break;
+			case GestureStatus.Running:
+				float canvasTotalX = (float)puea.TotalX * _screenScale;
+				float canvasTotalY = (float)puea.TotalY * _screenScale;
+				SKMatrix canvasTranslation = SKMatrix.MakeTranslation(canvasTotalX, canvasTotalY);
+				SKMatrix.Concat(ref _m, ref canvasTranslation, ref _startPanM);
+				_currentTransformM = canvasTranslation;
+				_canvasV.InvalidateSurface();
+				break;
+			default:
+				_startPanM = SKMatrix.MakeIdentity();
+				//Update inverse
+				_m.TryInvert(out _im);
+				//Force textLayer to regenerate
+				_textLayer?.Dispose();
+				_textLayer = null;
+				_canvasV.InvalidateSurface();
+				break;
+			}
+		}
+
+		private void HandlePinch(object sender, PinchGestureUpdatedEventArgs puea)
+		{
+			Debug.WriteLine(puea.Status + " (" + puea.ScaleOrigin.X + "," + puea.ScaleOrigin.Y + ") " + puea.Scale);
+			Point canvasAnchor = new Point(puea.ScaleOrigin.X * _canvasV.Width * _screenScale,
+										   puea.ScaleOrigin.Y * _canvasV.Height * _screenScale);
+			switch (puea.Status) {
+			case GestureStatus.Started:
+				_startPinchM = _m;
+				_startPinchAnchor = canvasAnchor;
+				_totalPinchScale = 1f;
+				break;
+			case GestureStatus.Running:
+				_totalPinchScale *= (float)puea.Scale;
+				SKMatrix canvasScaling = SKMatrix.MakeScale(_totalPinchScale, _totalPinchScale, (float)_startPinchAnchor.X, (float)_startPinchAnchor.Y);
+				SKMatrix.Concat(ref _m, ref canvasScaling, ref _startPinchM);
+				_currentTransformM = canvasScaling;
+				_canvasV.InvalidateSurface();
+				break;
+			default:
+				_startPinchM = SKMatrix.MakeIdentity();
+				_startPinchAnchor = Point.Zero;
+				_totalPinchScale = 1f;
+				//Update inverse
+				_m.TryInvert(out _im);
+				//Force textLayer to regenerate
+				_textLayer?.Dispose();
+				_textLayer = null;
+				_canvasV.InvalidateSurface();
+				break;
+			}
+		}
+
+        private void HandleReset(object sender, EventArgs e)
+        {
+			//Animate transition to identity transform
+			float startTransX = _m.TransX;
+			float startTransY = _m.TransY;
+			float startScale = _m.ScaleX;
+			float endTransX = 0;
+			float endTransY = 0;
+			float endScale = 1;
+			float totalTransX = endTransX - startTransX;
+			float totalTransY = endTransY - startTransY;
+			float totalScale = endScale - startScale;
+			new Animation(percent => {
+				float newTransX = totalTransX * (float)percent + startTransX;
+				float newTransY = totalTransY * (float)percent + startTransY;
+				float newScale = totalScale * (float)percent + startScale;
+				_m.TransX = newTransX;
+				_m.TransY = newTransY;
+				_m.ScaleX = newScale;
+				_m.ScaleY = newScale;
+                SKMatrix.Concat(ref _currentTransformM, ref _im, ref _m);
+				_canvasV.InvalidateSurface();
+			}).Commit(this, SELECTION_ANIMATION, length: ANIMATION_DURATION, easing: Easing.SinInOut, finished: (percent, isCanceled) => {
+				_m.TryInvert(out _im);
+				//Force textLayer to regenerate
+				_textLayer?.Dispose();
+				_textLayer = null;
+				_canvasV.InvalidateSurface();
+			});
+		}
+    }
 }
