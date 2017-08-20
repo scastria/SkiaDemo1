@@ -26,6 +26,7 @@ namespace SkiaDemo1
 		private float _screenScale;
 		private SKBitmap _bitmap = null;
 		private SKBitmap _textLayer = null;
+        private bool _isSelected = false;
 
 		public LayerPerformancePage()
 		{
@@ -56,9 +57,12 @@ namespace SkiaDemo1
 			PinchGestureRecognizer pngr = new PinchGestureRecognizer();
 			pngr.PinchUpdated += HandlePinch;
 			_canvasV.GestureRecognizers.Add(pngr);
-		}
+            TapGestureRecognizer tgr = new TapGestureRecognizer();
+            tgr.Tapped += HandleTap;
+            _canvasV.GestureRecognizers.Add(tgr);
+        }
 
-		private void HandlePaintCanvas(object sender, SKPaintSurfaceEventArgs e)
+        private void HandlePaintCanvas(object sender, SKPaintSurfaceEventArgs e)
 		{
 			SKCanvas canvas = e.Surface.Canvas;
 			SKImageInfo info = e.Info;
@@ -78,7 +82,7 @@ namespace SkiaDemo1
 					layerCanvas.SetMatrix(_m);
 					using (var paint = new SKPaint()) {
 						paint.TextSize = 10;
-						paint.Color = SKColors.Red;
+						paint.Color = (_isSelected) ? SKColors.Yellow : SKColors.Red;
 						paint.IsAntialias = true;
 						paint.Style = SKPaintStyle.Fill;
 						paint.TextAlign = SKTextAlign.Center;
@@ -162,6 +166,15 @@ namespace SkiaDemo1
 				break;
 			}
 		}
+
+        private void HandleTap(object sender, EventArgs e)
+        {
+            _isSelected = !_isSelected;
+            //Force textLayer to regenerate
+            _textLayer?.Dispose();
+            _textLayer = null;
+            _canvasV.InvalidateSurface();
+        }
 
         private void HandleReset(object sender, EventArgs e)
         {
