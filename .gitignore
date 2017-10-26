@@ -11,3 +11,4 @@
 /SkiaDemo1.UWP/bin
 /SkiaDemo1.UWP/obj
 /SkiaDemo1.UWP/project.lock.json
+*.userprefs

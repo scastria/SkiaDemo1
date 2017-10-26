@@ -68,6 +68,12 @@ namespace SkiaDemo1
 			layerPerformanceC.Tapped += async delegate {
 				await Navigation.PushAsync(new LayerPerformancePage());
 			};
+			TextCell transformFunC = new TextCell {
+				Text = "Transform Fun"
+			};
+			transformFunC.Tapped += async delegate {
+				await Navigation.PushAsync(new TransformFunPage());
+			};
 			TableView tableV = new TableView {
 				Intent = TableIntent.Menu,
 				Root = new TableRoot {
@@ -81,7 +87,8 @@ namespace SkiaDemo1
 						mrGesturesC,
 						annotateFaceC,
 						polyLabelC,
-						layerPerformanceC
+						layerPerformanceC,
+                        transformFunC
 					}
 				}
 			};

@@ -24,6 +24,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)PolyLabel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PriorityQueue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LayerPerformancePage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TransformFunPage.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)landscape.jpg" />
