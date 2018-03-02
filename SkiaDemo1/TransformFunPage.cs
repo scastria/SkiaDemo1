@@ -48,14 +48,14 @@ namespace SkiaDemo1
 
         private void HandleUp(object sender, MR.Gestures.DownUpEventArgs due)
         {
-            Console.WriteLine("Up: " + string.Join(" ", due.TriggeringTouches));
+            System.Diagnostics.Debug.WriteLine("Up: " + string.Join(" ", due.TriggeringTouches));
 			//foreach (int finger in due.TriggeringTouches)
                 //HandleTouch(finger, TouchActionType.Up, due.Touches[finger]);
 		}
 
         private void HandleDown(object sender, MR.Gestures.DownUpEventArgs due)
         {
-			Console.WriteLine("Down: " + string.Join(" ", due.TriggeringTouches));
+            System.Diagnostics.Debug.WriteLine("Down: " + string.Join(" ", due.TriggeringTouches));
 			//foreach (int finger in due.TriggeringTouches)
 			//HandleTouch(finger, TouchActionType.Down, due.Touches[finger]);
 		}

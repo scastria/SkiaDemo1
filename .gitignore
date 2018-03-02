@@ -12,3 +12,7 @@
 /SkiaDemo1.UWP/obj
 /SkiaDemo1.UWP/project.lock.json
 *.userprefs
+/Droid/SkiaDemo1.Droid.csproj.bak
+/iOS/SkiaDemo1.iOS.csproj.user
+/SkiaDemo1.UWP/SkiaDemo1.UWP.nuget.props
+/.vs
