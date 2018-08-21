@@ -44,6 +44,18 @@ namespace SkiaDemo1
 			imageInteractionC.Tapped += async delegate {
 				await Navigation.PushAsync(new ImageInteractionPage());
 			};
+            TextCell touchManipC = new TextCell {
+                Text = "Touch Manipulation"
+            };
+            touchManipC.Tapped += async delegate {
+                await Navigation.PushAsync(new TouchManipulationPage());
+            };
+            TextCell solarSystemC = new TextCell {
+                Text = "Solar System"
+            };
+            solarSystemC.Tapped += async delegate {
+                await Navigation.PushAsync(new SolarSystemPage());
+            };
 			TextCell mrGesturesC = new TextCell {
 				Text = "Mr. Gestures Squares"
 			};
@@ -84,6 +96,8 @@ namespace SkiaDemo1
 						taskAnimationC,
 						imageC,
 						imageInteractionC,
+                        touchManipC,
+                        solarSystemC,
 						mrGesturesC,
 						annotateFaceC,
 						polyLabelC,
