@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Reflection;
 using Plugin.EmbeddedResource;
 using SkiaSharp;
@@ -11,7 +12,9 @@ namespace SkiaDemo1
     {
         private SKCanvasView _canvasV = null;
         private SKBitmap _bitmap = null;
+        private SKBitmap _layer = null;
         private SKMatrix _m = SKMatrix.MakeIdentity();
+        private SKMatrix? _layerM = null;
 
         public TouchManipulationPage()
         {
@@ -42,17 +45,56 @@ namespace SkiaDemo1
             SKImageInfo info = e.Info;
             SKCanvas canvas = e.Surface.Canvas;
             canvas.Clear();
-            canvas.SetMatrix(_m);
             //Draw bitmap to fill screen maintaining aspect
             SKSize imgSize = new SKSize(_bitmap.Width, _bitmap.Height);
             SKRect aspectRect = SKRect.Create(_canvasV.CanvasSize.Width, _canvasV.CanvasSize.Height).AspectFit(imgSize);
-            canvas.DrawBitmap(_bitmap, aspectRect);
+            using (new SKAutoCanvasRestore(canvas)) {
+                canvas.SetMatrix(_m);
+                canvas.DrawBitmap(_bitmap, aspectRect);
+            }
+            //Draw layer
+            if (_layer == null) {
+                _layer = new SKBitmap(info);
+                using (SKCanvas layerCanvas = new SKCanvas(_layer)) {
+                    layerCanvas.Clear();
+                    layerCanvas.SetMatrix(_m);
+                    using (SKPaint p = new SKPaint { Color = SKColors.Red, IsAntialias = true, StrokeWidth = 3, StrokeCap = SKStrokeCap.Round, TextAlign = SKTextAlign.Center, TextSize = 40 }) {
+                        p.Style = SKPaintStyle.Stroke;
+                        layerCanvas.DrawRect(aspectRect.MidX - 50, aspectRect.MidY - 50, 100, 100, p);
+                        p.Style = SKPaintStyle.Fill;
+                        layerCanvas.DrawText("Hello", aspectRect.MidX, aspectRect.MidY, p);
+                    }
+                }
+                canvas.DrawBitmap(_layer, info.Rect);
+            } else {
+                using (new SKAutoCanvasRestore(canvas)) {
+                    canvas.SetMatrix(_layerM.Value);
+                    canvas.DrawBitmap(_layer, info.Rect);
+                }
+            }
         }
 
         private void HandleLongPressed(object sender, MR.Gestures.LongPressEventArgs lpea)
         {
             _m = SKMatrix.MakeIdentity();
+            InvalidateLayer();
             _canvasV.InvalidateSurface();
+        }
+
+        private void InvalidateLayer()
+        {
+            if (_layer != null) {
+                _layer.Dispose();
+                _layer = null;
+            }
+            _layerM = null;
+        }
+
+        private void DeltaLayer(SKMatrix deltaM)
+        {
+            SKMatrix layerM = _layerM.Value;
+            SKMatrix.PostConcat(ref layerM, deltaM);
+            _layerM = layerM;
         }
 
         private void HandlePanning(object sender, MR.Gestures.PanEventArgs pea)
@@ -62,14 +104,19 @@ namespace SkiaDemo1
 
         private void HandlePanned(object sender, MR.Gestures.PanEventArgs pea)
         {
-            HandlePan((float)pea.DeltaDistance.X, (float)pea.DeltaDistance.Y);
+            //HandlePan((float)pea.DeltaDistance.X, (float)pea.DeltaDistance.Y);
+            InvalidateLayer();
+            _canvasV.InvalidateSurface();
         }
 
         private void HandlePan(float deltaX, float deltaY)
         {
+            if (!_layerM.HasValue)
+                _layerM = SKMatrix.MakeIdentity();
             SKPoint deltaTran = ToCanvasPt(deltaX, deltaY);
             SKMatrix deltaM = SKMatrix.MakeTranslation(deltaTran.X, deltaTran.Y);
             SKMatrix.PostConcat(ref _m, deltaM);
+            DeltaLayer(deltaM);
             _canvasV.InvalidateSurface();
         }
 
@@ -80,14 +127,19 @@ namespace SkiaDemo1
 
         private void HandlePinched(object sender, MR.Gestures.PinchEventArgs pea)
         {
-            HandlePinch((float)pea.Center.X, (float)pea.Center.Y, (float)pea.DeltaScale);
+            //HandlePinch((float)pea.Center.X, (float)pea.Center.Y, (float)pea.DeltaScale);
+            InvalidateLayer();
+            _canvasV.InvalidateSurface();
         }
 
         private void HandlePinch(float pivotX, float pivotY, float deltaScale)
         {
+            if (!_layerM.HasValue)
+                _layerM = SKMatrix.MakeIdentity();
             SKPoint pivotPt = ToCanvasPt(pivotX, pivotY);
             SKMatrix deltaM = SKMatrix.MakeScale(deltaScale, deltaScale, pivotPt.X, pivotPt.Y);
             SKMatrix.PostConcat(ref _m, deltaM);
+            DeltaLayer(deltaM);
             _canvasV.InvalidateSurface();
         }
 
@@ -98,14 +150,19 @@ namespace SkiaDemo1
 
         private void HandleRotated(object sender, MR.Gestures.RotateEventArgs rea)
         {
-            HandleRotate((float)rea.Center.X, (float)rea.Center.Y, (float)rea.DeltaAngle);
+            //HandleRotate((float)rea.Center.X, (float)rea.Center.Y, (float)rea.DeltaAngle);
+            InvalidateLayer();
+            _canvasV.InvalidateSurface();
         }
 
         private void HandleRotate(float pivotX, float pivotY, float deltaAngle)
         {
+            if (!_layerM.HasValue)
+                _layerM = SKMatrix.MakeIdentity();
             SKPoint pivotPt = ToCanvasPt(pivotX, pivotY);
             SKMatrix deltaM = SKMatrix.MakeRotationDegrees(deltaAngle, pivotPt.X, pivotPt.Y);
             SKMatrix.PostConcat(ref _m, deltaM);
+            DeltaLayer(deltaM);
             _canvasV.InvalidateSurface();
         }
 
