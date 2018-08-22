@@ -108,7 +108,14 @@ namespace SkiaDemo1
 			}
 		}
 
-		private void HandlePan(object sender, PanUpdatedEventArgs puea)
+        private void InvalidateLayer()
+        {
+            _textLayer?.Dispose();
+            _textLayer = null;
+            _currentTransformM = SKMatrix.MakeIdentity();
+        }
+
+        private void HandlePan(object sender, PanUpdatedEventArgs puea)
 		{
 			Debug.WriteLine(puea.StatusType + " (" + puea.TotalX + "," + puea.TotalY + ")");
 			switch (puea.StatusType) {
@@ -127,10 +134,8 @@ namespace SkiaDemo1
 				_startPanM = SKMatrix.MakeIdentity();
 				//Update inverse
 				_m.TryInvert(out _im);
-				//Force textLayer to regenerate
-				_textLayer?.Dispose();
-				_textLayer = null;
-				_canvasV.InvalidateSurface();
+                InvalidateLayer();
+                _canvasV.InvalidateSurface();
 				break;
 			}
 		}
@@ -159,20 +164,16 @@ namespace SkiaDemo1
 				_totalPinchScale = 1f;
 				//Update inverse
 				_m.TryInvert(out _im);
-				//Force textLayer to regenerate
-				_textLayer?.Dispose();
-				_textLayer = null;
-				_canvasV.InvalidateSurface();
-				break;
+                InvalidateLayer();
+                _canvasV.InvalidateSurface();
+                break;
 			}
 		}
 
         private void HandleTap(object sender, EventArgs e)
         {
             _isSelected = !_isSelected;
-            //Force textLayer to regenerate
-            _textLayer?.Dispose();
-            _textLayer = null;
+            InvalidateLayer();
             _canvasV.InvalidateSurface();
         }
 
@@ -200,10 +201,8 @@ namespace SkiaDemo1
 				_canvasV.InvalidateSurface();
 			}).Commit(this, SELECTION_ANIMATION, length: ANIMATION_DURATION, easing: Easing.SinInOut, finished: (percent, isCanceled) => {
 				_m.TryInvert(out _im);
-				//Force textLayer to regenerate
-				_textLayer?.Dispose();
-				_textLayer = null;
-				_canvasV.InvalidateSurface();
+                InvalidateLayer();
+                _canvasV.InvalidateSurface();
 			});
 		}
     }

@@ -71,7 +71,8 @@ namespace SkiaDemo1
                 canvas.DrawBitmap(_layer, info.Rect);
             } else {
                 using (new SKAutoCanvasRestore(canvas)) {
-                    canvas.SetMatrix(_layerM.Value);
+                    SKMatrix layerM = (_layerM.HasValue) ? _layerM.Value : SKMatrix.MakeIdentity();
+                    canvas.SetMatrix(layerM);
                     canvas.DrawBitmap(_layer, info.Rect);
                 }
             }
