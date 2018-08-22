@@ -10,6 +10,9 @@ namespace SkiaDemo1
 {
     public class TouchManipulationPage : ContentPage
     {
+        private const string SELECTION_ANIMATION = "SelectionAnimation";
+        private const int ANIMATION_DURATION = 1000;
+
         private SKCanvasView _canvasV = null;
         private SKBitmap _bitmap = null;
         private SKBitmap _layer = null;
@@ -76,9 +79,64 @@ namespace SkiaDemo1
 
         private void HandleLongPressed(object sender, MR.Gestures.LongPressEventArgs lpea)
         {
-            _m = SKMatrix.MakeIdentity();
-            InvalidateLayer();
-            _canvasV.InvalidateSurface();
+            AnimateReset();
+        }
+
+        private void AnimateReset()
+        {
+            //Animate transition to identity transform
+            float startTransX = _m.TransX;
+            float startTransY = _m.TransY;
+            float startScale = _m.ScaleX;
+            float startAngle = GetAngle(_m);
+            float endTransX = 0;
+            float endTransY = 0;
+            float endScale = 1;
+            float endAngle = 0;
+            float totalTransX = endTransX - startTransX;
+            float totalTransY = endTransY - startTransY;
+            float totalScale = endScale - startScale;
+            float totalAngle = endAngle - startAngle;
+            _layerM = SKMatrix.MakeIdentity();
+            new Animation(percent => {
+                float curTransX = _m.TransX;
+                float curTransY = _m.TransY;
+                float curScale = _m.ScaleX;
+                float curAngle = GetAngle(_m);
+                float newTransX = totalTransX * (float)percent + startTransX;
+                float newTransY = totalTransY * (float)percent + startTransY;
+                float newScale = totalScale * (float)percent + startScale;
+                float newAngle = totalAngle * (float)percent + startAngle;
+                float deltaTransX = newTransX - curTransX;
+                float deltaTransY = newTransY - curTransY;
+                float deltaScale = newScale / curScale;
+                float deltaAngle = newAngle - curAngle;
+                //Animate translation
+                SKMatrix deltaM = SKMatrix.MakeTranslation(deltaTransX, deltaTransY);
+                SKMatrix.PostConcat(ref _m, deltaM);
+                DeltaLayer(deltaM);
+                //Animate scale
+                deltaM = SKMatrix.MakeScale(deltaScale, deltaScale);
+                SKMatrix.PostConcat(ref _m, deltaM);
+                DeltaLayer(deltaM);
+                //Animate rotation
+                deltaM = SKMatrix.MakeRotationDegrees(deltaAngle);
+                SKMatrix.PostConcat(ref _m, deltaM);
+                DeltaLayer(deltaM);
+                _canvasV.InvalidateSurface();
+            }).Commit(this, SELECTION_ANIMATION, length: ANIMATION_DURATION, easing: Easing.SinInOut, finished: (percent, isCanceled) => {
+                _m = SKMatrix.MakeIdentity();
+                InvalidateLayer();
+                _canvasV.InvalidateSurface();
+            });
+        }
+
+        private float GetAngle(SKMatrix matrix)
+        {
+            SKPoint unitVector = new SKPoint(1, 0);
+            SKPoint transformedVector = matrix.MapVector(unitVector.X, unitVector.Y);
+            double rad = Math.Atan2(transformedVector.Y, transformedVector.X);
+            return ((float)(rad * 180 / Math.PI));
         }
 
         private void InvalidateLayer()
