@@ -61,11 +61,32 @@ namespace SkiaDemo1
                 using (SKCanvas layerCanvas = new SKCanvas(_layer)) {
                     layerCanvas.Clear();
                     layerCanvas.SetMatrix(_m);
+                    float angle = GetAngle(_m);
                     using (SKPaint p = new SKPaint { Color = SKColors.Red, IsAntialias = true, StrokeWidth = 3, StrokeCap = SKStrokeCap.Round, TextAlign = SKTextAlign.Center, TextSize = 40 }) {
                         p.Style = SKPaintStyle.Stroke;
-                        layerCanvas.DrawRect(aspectRect.MidX - 50, aspectRect.MidY - 50, 100, 100, p);
+                        SKRect boxR = new SKRect(aspectRect.MidX - 50, aspectRect.MidY - 50, aspectRect.MidX + 50, aspectRect.MidY + 50);
+                        layerCanvas.DrawRect(boxR, p);
                         p.Style = SKPaintStyle.Fill;
-                        layerCanvas.DrawText("Hello", aspectRect.MidX, aspectRect.MidY, p);
+                        p.Color = SKColors.Green;
+                        layerCanvas.Save();
+                        layerCanvas.RotateDegrees(-angle, boxR.Left, boxR.Top);
+                        layerCanvas.DrawText("Hello", boxR.Left, boxR.Top, p);
+                        layerCanvas.Restore();
+                        p.Color = SKColors.Blue;
+                        layerCanvas.Save();
+                        layerCanvas.RotateDegrees(-angle, boxR.Right, boxR.Top);
+                        layerCanvas.DrawText("There", boxR.Right, boxR.Top, p);
+                        layerCanvas.Restore();
+                        p.Color = SKColors.Orange;
+                        layerCanvas.Save();
+                        layerCanvas.RotateDegrees(-angle, boxR.Left, boxR.Bottom);
+                        layerCanvas.DrawText("Bye", boxR.Left, boxR.Bottom, p);
+                        layerCanvas.Restore();
+                        p.Color = SKColors.Purple;
+                        layerCanvas.Save();
+                        layerCanvas.RotateDegrees(-angle, boxR.Right, boxR.Bottom);
+                        layerCanvas.DrawText("Now", boxR.Right, boxR.Bottom, p);
+                        layerCanvas.Restore();
                     }
                 }
                 canvas.DrawBitmap(_layer, info.Rect);
