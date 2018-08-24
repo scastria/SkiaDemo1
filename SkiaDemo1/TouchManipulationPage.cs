@@ -12,16 +12,25 @@ namespace SkiaDemo1
     {
         private const string SELECTION_ANIMATION = "SelectionAnimation";
         private const int ANIMATION_DURATION = 1000;
+        private const int ANNOTATION_CIRCLE_RADIUS = 20;
 
         private SKCanvasView _canvasV = null;
         private SKBitmap _bitmap = null;
         private SKBitmap _layer = null;
         private SKMatrix _m = SKMatrix.MakeIdentity();
+        private SKMatrix _im = SKMatrix.MakeIdentity();
         private SKMatrix? _layerM = null;
+        private int _rotationAngle = 0;
+        private int _selectedCircle = -1;
 
         public TouchManipulationPage()
         {
             Title = "Touch Manipulation";
+            ToolbarItem rotateTBI = new ToolbarItem {
+                Text = "Rotate"
+            };
+            rotateTBI.Clicked += HandleRotateClicked;
+            ToolbarItems.Add(rotateTBI);
             _canvasV = new SKCanvasView();
             _canvasV.PaintSurface += HandlePaintCanvas;
             Grid mainG = new Grid();
@@ -34,6 +43,7 @@ namespace SkiaDemo1
                 _bitmap = SKBitmap.Decode(stream);
             }
             //Interaction
+            gestureV.Tapped += HandleTapped;
             gestureV.LongPressing += HandleLongPressed;
             gestureV.Panning += HandlePanning;
             gestureV.Panned += HandlePanned;
@@ -49,11 +59,10 @@ namespace SkiaDemo1
             SKCanvas canvas = e.Surface.Canvas;
             canvas.Clear();
             //Draw bitmap to fill screen maintaining aspect
-            SKSize imgSize = new SKSize(_bitmap.Width, _bitmap.Height);
-            SKRect aspectRect = SKRect.Create(_canvasV.CanvasSize.Width, _canvasV.CanvasSize.Height).AspectFit(imgSize);
+            SKRect bitmapRect = CalculateBitmapAspectRect();
             using (new SKAutoCanvasRestore(canvas)) {
                 canvas.SetMatrix(_m);
-                canvas.DrawBitmap(_bitmap, aspectRect);
+                canvas.DrawBitmap(_bitmap, bitmapRect);
             }
             //Draw layer
             if (_layer == null) {
@@ -64,9 +73,17 @@ namespace SkiaDemo1
                     float angle = GetAngle(_m);
                     using (SKPaint p = new SKPaint { Color = SKColors.Red, IsAntialias = true, StrokeWidth = 3, StrokeCap = SKStrokeCap.Round, TextAlign = SKTextAlign.Center, TextSize = 40 }) {
                         p.Style = SKPaintStyle.Stroke;
-                        SKRect boxR = new SKRect(aspectRect.MidX - 50, aspectRect.MidY - 50, aspectRect.MidX + 50, aspectRect.MidY + 50);
+                        SKRect boxR = new SKRect(bitmapRect.MidX - 50, bitmapRect.MidY - 50, bitmapRect.MidX + 50, bitmapRect.MidY + 50);
                         layerCanvas.DrawRect(boxR, p);
                         p.Style = SKPaintStyle.Fill;
+                        p.Color = (_selectedCircle == 0) ? SKColors.Yellow : SKColors.Red;
+                        layerCanvas.DrawCircle(bitmapRect.Left, bitmapRect.Top, ANNOTATION_CIRCLE_RADIUS, p);
+                        p.Color = (_selectedCircle == 1) ? SKColors.Yellow : SKColors.Red;
+                        layerCanvas.DrawCircle(bitmapRect.Right, bitmapRect.Top, ANNOTATION_CIRCLE_RADIUS, p);
+                        p.Color = (_selectedCircle == 2) ? SKColors.Yellow : SKColors.Red;
+                        layerCanvas.DrawCircle(bitmapRect.Right, bitmapRect.Bottom, ANNOTATION_CIRCLE_RADIUS, p);
+                        p.Color = (_selectedCircle == 3) ? SKColors.Yellow : SKColors.Red;
+                        layerCanvas.DrawCircle(bitmapRect.Left, bitmapRect.Bottom, ANNOTATION_CIRCLE_RADIUS, p);
                         p.Color = SKColors.Green;
                         layerCanvas.Save();
                         layerCanvas.RotateDegrees(-angle, boxR.Left, boxR.Top);
@@ -97,6 +114,68 @@ namespace SkiaDemo1
                     canvas.DrawBitmap(_layer, info.Rect);
                 }
             }
+        }
+
+        private SKRect CalculateBitmapAspectRect()
+        {
+            if (_bitmap == null)
+                return (SKRect.Empty);
+            SKSize imgSize = new SKSize(_bitmap.Width, _bitmap.Height);
+            return (SKRect.Create(_canvasV.CanvasSize.Width, _canvasV.CanvasSize.Height).AspectFit(imgSize));
+        }
+
+        private void HandleRotateClicked(object sender, EventArgs e)
+        {
+            _rotationAngle += 90;
+            if (_rotationAngle == 360)
+                _rotationAngle = 0;
+            InvalidateLayer();
+            _canvasV.InvalidateSurface();
+        }
+
+        private void HandleTapped(object sender, MR.Gestures.TapEventArgs tea)
+        {
+            SKPoint canvasPt = ToCanvasPt((float)tea.Center.X, (float)tea.Center.Y);
+            SKRect bitmapRect = CalculateBitmapAspectRect();
+            //Check UL
+            SKRect ulRect = new SKRect(bitmapRect.Left, bitmapRect.Top, bitmapRect.Left, bitmapRect.Top);
+            ulRect.Inflate(ANNOTATION_CIRCLE_RADIUS, ANNOTATION_CIRCLE_RADIUS);
+            if(ulRect.Contains(canvasPt)) {
+                _selectedCircle = 0;
+                InvalidateLayer();
+                _canvasV.InvalidateSurface();
+                return;
+            }
+            //Check UR
+            SKRect urRect = new SKRect(bitmapRect.Right, bitmapRect.Top, bitmapRect.Right, bitmapRect.Top);
+            urRect.Inflate(ANNOTATION_CIRCLE_RADIUS, ANNOTATION_CIRCLE_RADIUS);
+            if (urRect.Contains(canvasPt)) {
+                _selectedCircle = 1;
+                InvalidateLayer();
+                _canvasV.InvalidateSurface();
+                return;
+            }
+            //Check LR
+            SKRect lrRect = new SKRect(bitmapRect.Right, bitmapRect.Bottom, bitmapRect.Right, bitmapRect.Bottom);
+            lrRect.Inflate(ANNOTATION_CIRCLE_RADIUS, ANNOTATION_CIRCLE_RADIUS);
+            if (lrRect.Contains(canvasPt)) {
+                _selectedCircle = 2;
+                InvalidateLayer();
+                _canvasV.InvalidateSurface();
+                return;
+            }
+            //Check LL
+            SKRect llRect = new SKRect(bitmapRect.Left, bitmapRect.Bottom, bitmapRect.Left, bitmapRect.Bottom);
+            llRect.Inflate(ANNOTATION_CIRCLE_RADIUS, ANNOTATION_CIRCLE_RADIUS);
+            if (llRect.Contains(canvasPt)) {
+                _selectedCircle = 3;
+                InvalidateLayer();
+                _canvasV.InvalidateSurface();
+                return;
+            }
+            _selectedCircle = -1;
+            InvalidateLayer();
+            _canvasV.InvalidateSurface();
         }
 
         private void HandleLongPressed(object sender, MR.Gestures.LongPressEventArgs lpea)
@@ -148,6 +227,7 @@ namespace SkiaDemo1
                 _canvasV.InvalidateSurface();
             }).Commit(this, SELECTION_ANIMATION, length: ANIMATION_DURATION, easing: Easing.SinInOut, finished: (percent, isCanceled) => {
                 _m = SKMatrix.MakeIdentity();
+                _m.TryInvert(out _im);
                 InvalidateLayer();
                 _canvasV.InvalidateSurface();
             });
@@ -179,76 +259,75 @@ namespace SkiaDemo1
 
         private void HandlePanning(object sender, MR.Gestures.PanEventArgs pea)
         {
-            HandlePan((float)pea.DeltaDistance.X, (float)pea.DeltaDistance.Y);
-        }
-
-        private void HandlePanned(object sender, MR.Gestures.PanEventArgs pea)
-        {
-            //HandlePan((float)pea.DeltaDistance.X, (float)pea.DeltaDistance.Y);
-            InvalidateLayer();
-            _canvasV.InvalidateSurface();
-        }
-
-        private void HandlePan(float deltaX, float deltaY)
-        {
+            float deltaX = (float)pea.DeltaDistance.X;
+            float deltaY = (float)pea.DeltaDistance.Y;
             if (!_layerM.HasValue)
                 _layerM = SKMatrix.MakeIdentity();
-            SKPoint deltaTran = ToCanvasPt(deltaX, deltaY);
+            SKPoint deltaTran = ToUntransformedCanvasPt(deltaX, deltaY);
             SKMatrix deltaM = SKMatrix.MakeTranslation(deltaTran.X, deltaTran.Y);
             SKMatrix.PostConcat(ref _m, deltaM);
             DeltaLayer(deltaM);
             _canvasV.InvalidateSurface();
         }
 
-        private void HandlePinching(object sender, MR.Gestures.PinchEventArgs pea)
+        private void HandlePanned(object sender, MR.Gestures.PanEventArgs pea)
         {
-            HandlePinch((float)pea.Center.X, (float)pea.Center.Y, (float)pea.DeltaScale);
-        }
-
-        private void HandlePinched(object sender, MR.Gestures.PinchEventArgs pea)
-        {
-            //HandlePinch((float)pea.Center.X, (float)pea.Center.Y, (float)pea.DeltaScale);
+            _m.TryInvert(out _im);
             InvalidateLayer();
             _canvasV.InvalidateSurface();
         }
 
-        private void HandlePinch(float pivotX, float pivotY, float deltaScale)
+        private void HandlePinching(object sender, MR.Gestures.PinchEventArgs pea)
         {
+            float pivotX = (float)pea.Center.X;
+            float pivotY = (float)pea.Center.Y;
+            float deltaScale = (float)pea.DeltaScale;
             if (!_layerM.HasValue)
                 _layerM = SKMatrix.MakeIdentity();
-            SKPoint pivotPt = ToCanvasPt(pivotX, pivotY);
+            SKPoint pivotPt = ToUntransformedCanvasPt(pivotX, pivotY);
             SKMatrix deltaM = SKMatrix.MakeScale(deltaScale, deltaScale, pivotPt.X, pivotPt.Y);
             SKMatrix.PostConcat(ref _m, deltaM);
             DeltaLayer(deltaM);
             _canvasV.InvalidateSurface();
         }
 
-        private void HandleRotating(object sender, MR.Gestures.RotateEventArgs rea)
+        private void HandlePinched(object sender, MR.Gestures.PinchEventArgs pea)
         {
-            HandleRotate((float)rea.Center.X, (float)rea.Center.Y, (float)rea.DeltaAngle);
-        }
-
-        private void HandleRotated(object sender, MR.Gestures.RotateEventArgs rea)
-        {
-            //HandleRotate((float)rea.Center.X, (float)rea.Center.Y, (float)rea.DeltaAngle);
+            _m.TryInvert(out _im);
             InvalidateLayer();
             _canvasV.InvalidateSurface();
         }
 
-        private void HandleRotate(float pivotX, float pivotY, float deltaAngle)
+        private void HandleRotating(object sender, MR.Gestures.RotateEventArgs rea)
         {
+            float pivotX = (float)rea.Center.X;
+            float pivotY = (float)rea.Center.Y;
+            float deltaAngle = (float)rea.DeltaAngle;
             if (!_layerM.HasValue)
                 _layerM = SKMatrix.MakeIdentity();
-            SKPoint pivotPt = ToCanvasPt(pivotX, pivotY);
+            SKPoint pivotPt = ToUntransformedCanvasPt(pivotX, pivotY);
             SKMatrix deltaM = SKMatrix.MakeRotationDegrees(deltaAngle, pivotPt.X, pivotPt.Y);
             SKMatrix.PostConcat(ref _m, deltaM);
             DeltaLayer(deltaM);
             _canvasV.InvalidateSurface();
         }
 
-        private SKPoint ToCanvasPt(float x, float y)
+        private void HandleRotated(object sender, MR.Gestures.RotateEventArgs rea)
+        {
+            _m.TryInvert(out _im);
+            InvalidateLayer();
+            _canvasV.InvalidateSurface();
+        }
+
+        private SKPoint ToUntransformedCanvasPt(float x, float y)
         {
             return (new SKPoint(x * _canvasV.CanvasSize.Width / (float)_canvasV.Width, y * _canvasV.CanvasSize.Height / (float)_canvasV.Height));
+        }
+
+        private SKPoint ToCanvasPt(float x,float y)
+        {
+            SKPoint untransformedPt = ToUntransformedCanvasPt(x, y);
+            return (_im.MapPoint(untransformedPt));
         }
     }
 }
