@@ -20,7 +20,8 @@ namespace SkiaDemo1
         private SKBitmap _layer = null;
         private SKMatrix _m = SKMatrix.MakeIdentity();
         private SKMatrix _im = SKMatrix.MakeIdentity();
-        private SKMatrix? _layerM = null;
+        private SKMatrix _layerM = SKMatrix.MakeIdentity();
+        private bool _isPanZoom = false;
         private int _rotationAngle = 0;
         private int _selectedCircle = -1;
 
@@ -111,8 +112,7 @@ namespace SkiaDemo1
                 canvas.DrawBitmap(_layer, info.Rect);
             } else {
                 using (new SKAutoCanvasRestore(canvas)) {
-                    SKMatrix layerM = (_layerM.HasValue) ? _layerM.Value : SKMatrix.MakeIdentity();
-                    canvas.SetMatrix(layerM);
+                    canvas.SetMatrix(_layerM);
                     canvas.DrawBitmap(_layer, info.Rect);
                 }
             }
@@ -165,7 +165,7 @@ namespace SkiaDemo1
             if (_rotationAngle == 360)
                 _rotationAngle = 0;
             _m = SKMatrix.MakeIdentity();
-            _m.TryInvert(out _im);
+            _im = SKMatrix.MakeIdentity();
             GenerateRotatedBitmap();
             InvalidateLayer();
             _canvasV.InvalidateSurface();
@@ -253,15 +253,15 @@ namespace SkiaDemo1
                 //Animate translation
                 SKMatrix deltaM = SKMatrix.MakeTranslation(deltaTransX, deltaTransY);
                 SKMatrix.PostConcat(ref _m, deltaM);
-                DeltaLayer(deltaM);
+                SKMatrix.PostConcat(ref _layerM, deltaM);
                 //Animate scale
                 deltaM = SKMatrix.MakeScale(deltaScale, deltaScale);
                 SKMatrix.PostConcat(ref _m, deltaM);
-                DeltaLayer(deltaM);
+                SKMatrix.PostConcat(ref _layerM, deltaM);
                 //Animate rotation
                 deltaM = SKMatrix.MakeRotationDegrees(deltaAngle);
                 SKMatrix.PostConcat(ref _m, deltaM);
-                DeltaLayer(deltaM);
+                SKMatrix.PostConcat(ref _layerM, deltaM);
                 _canvasV.InvalidateSurface();
             }).Commit(this, SELECTION_ANIMATION, length: ANIMATION_DURATION, easing: Easing.SinInOut, finished: (percent, isCanceled) => {
                 _m = SKMatrix.MakeIdentity();
@@ -285,31 +285,27 @@ namespace SkiaDemo1
                 _layer.Dispose();
                 _layer = null;
             }
-            _layerM = null;
-        }
-
-        private void DeltaLayer(SKMatrix deltaM)
-        {
-            SKMatrix layerM = _layerM.Value;
-            SKMatrix.PostConcat(ref layerM, deltaM);
-            _layerM = layerM;
+            _layerM = SKMatrix.MakeIdentity();
         }
 
         private void HandlePanning(object sender, MR.Gestures.PanEventArgs pea)
         {
             float deltaX = (float)pea.DeltaDistance.X;
             float deltaY = (float)pea.DeltaDistance.Y;
-            if (!_layerM.HasValue)
+            if (!_isPanZoom) {
+                _isPanZoom = true;
                 _layerM = SKMatrix.MakeIdentity();
+            }
             SKPoint deltaTran = ToUntransformedCanvasPt(deltaX, deltaY);
             SKMatrix deltaM = SKMatrix.MakeTranslation(deltaTran.X, deltaTran.Y);
             SKMatrix.PostConcat(ref _m, deltaM);
-            DeltaLayer(deltaM);
+            SKMatrix.PostConcat(ref _layerM, deltaM);
             _canvasV.InvalidateSurface();
         }
 
         private void HandlePanned(object sender, MR.Gestures.PanEventArgs pea)
         {
+            _isPanZoom = false;
             _m.TryInvert(out _im);
             InvalidateLayer();
             _canvasV.InvalidateSurface();
@@ -320,17 +316,20 @@ namespace SkiaDemo1
             float pivotX = (float)pea.Center.X;
             float pivotY = (float)pea.Center.Y;
             float deltaScale = (float)pea.DeltaScale;
-            if (!_layerM.HasValue)
+            if (!_isPanZoom) {
+                _isPanZoom = true;
                 _layerM = SKMatrix.MakeIdentity();
+            }
             SKPoint pivotPt = ToUntransformedCanvasPt(pivotX, pivotY);
             SKMatrix deltaM = SKMatrix.MakeScale(deltaScale, deltaScale, pivotPt.X, pivotPt.Y);
             SKMatrix.PostConcat(ref _m, deltaM);
-            DeltaLayer(deltaM);
+            SKMatrix.PostConcat(ref _layerM, deltaM);
             _canvasV.InvalidateSurface();
         }
 
         private void HandlePinched(object sender, MR.Gestures.PinchEventArgs pea)
         {
+            _isPanZoom = false;
             _m.TryInvert(out _im);
             InvalidateLayer();
             _canvasV.InvalidateSurface();
@@ -341,17 +340,20 @@ namespace SkiaDemo1
             float pivotX = (float)rea.Center.X;
             float pivotY = (float)rea.Center.Y;
             float deltaAngle = (float)rea.DeltaAngle;
-            if (!_layerM.HasValue)
+            if (!_isPanZoom) {
+                _isPanZoom = true;
                 _layerM = SKMatrix.MakeIdentity();
+            }
             SKPoint pivotPt = ToUntransformedCanvasPt(pivotX, pivotY);
             SKMatrix deltaM = SKMatrix.MakeRotationDegrees(deltaAngle, pivotPt.X, pivotPt.Y);
             SKMatrix.PostConcat(ref _m, deltaM);
-            DeltaLayer(deltaM);
+            SKMatrix.PostConcat(ref _layerM, deltaM);
             _canvasV.InvalidateSurface();
         }
 
         private void HandleRotated(object sender, MR.Gestures.RotateEventArgs rea)
         {
+            _isPanZoom = false;
             _m.TryInvert(out _im);
             InvalidateLayer();
             _canvasV.InvalidateSurface();
