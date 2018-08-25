@@ -16,6 +16,7 @@ namespace SkiaDemo1
 
         private SKCanvasView _canvasV = null;
         private SKBitmap _bitmap = null;
+        private SKBitmap _rotatedBM = null;
         private SKBitmap _layer = null;
         private SKMatrix _m = SKMatrix.MakeIdentity();
         private SKMatrix _im = SKMatrix.MakeIdentity();
@@ -42,6 +43,7 @@ namespace SkiaDemo1
             using (var stream = new SKManagedStream(ResourceLoader.GetEmbeddedResourceStream(this.GetType().GetTypeInfo().Assembly, "landscape.jpg"))) {
                 _bitmap = SKBitmap.Decode(stream);
             }
+            GenerateRotatedBitmap();
             //Interaction
             gestureV.Tapped += HandleTapped;
             gestureV.LongPressing += HandleLongPressed;
@@ -59,10 +61,10 @@ namespace SkiaDemo1
             SKCanvas canvas = e.Surface.Canvas;
             canvas.Clear();
             //Draw bitmap to fill screen maintaining aspect
-            SKRect bitmapRect = CalculateBitmapAspectRect();
+            SKRect bitmapRect = CalculateBitmapAspectRect(_rotatedBM);
             using (new SKAutoCanvasRestore(canvas)) {
                 canvas.SetMatrix(_m);
-                canvas.DrawBitmap(_bitmap, bitmapRect);
+                canvas.DrawBitmap(_rotatedBM, bitmapRect);
             }
             //Draw layer
             if (_layer == null) {
@@ -85,25 +87,25 @@ namespace SkiaDemo1
                         p.Color = (_selectedCircle == 3) ? SKColors.Yellow : SKColors.Red;
                         layerCanvas.DrawCircle(bitmapRect.Left, bitmapRect.Bottom, ANNOTATION_CIRCLE_RADIUS, p);
                         p.Color = SKColors.Green;
-                        layerCanvas.Save();
-                        layerCanvas.RotateDegrees(-angle, boxR.Left, boxR.Top);
-                        layerCanvas.DrawText("Hello", boxR.Left, boxR.Top, p);
-                        layerCanvas.Restore();
+                        using (new SKAutoCanvasRestore(layerCanvas)) {
+                            layerCanvas.RotateDegrees(-angle, boxR.Left, boxR.Top);
+                            layerCanvas.DrawText("Hello", boxR.Left, boxR.Top, p);
+                        }
                         p.Color = SKColors.Blue;
-                        layerCanvas.Save();
-                        layerCanvas.RotateDegrees(-angle, boxR.Right, boxR.Top);
-                        layerCanvas.DrawText("There", boxR.Right, boxR.Top, p);
-                        layerCanvas.Restore();
+                        using (new SKAutoCanvasRestore(layerCanvas)) {
+                            layerCanvas.RotateDegrees(-angle, boxR.Right, boxR.Top);
+                            layerCanvas.DrawText("There", boxR.Right, boxR.Top, p);
+                        }
                         p.Color = SKColors.Orange;
-                        layerCanvas.Save();
-                        layerCanvas.RotateDegrees(-angle, boxR.Left, boxR.Bottom);
-                        layerCanvas.DrawText("Bye", boxR.Left, boxR.Bottom, p);
-                        layerCanvas.Restore();
+                        using (new SKAutoCanvasRestore(layerCanvas)) {
+                            layerCanvas.RotateDegrees(-angle, boxR.Left, boxR.Bottom);
+                            layerCanvas.DrawText("Bye", boxR.Left, boxR.Bottom, p);
+                        }
                         p.Color = SKColors.Purple;
-                        layerCanvas.Save();
-                        layerCanvas.RotateDegrees(-angle, boxR.Right, boxR.Bottom);
-                        layerCanvas.DrawText("Now", boxR.Right, boxR.Bottom, p);
-                        layerCanvas.Restore();
+                        using (new SKAutoCanvasRestore(layerCanvas)) {
+                            layerCanvas.RotateDegrees(-angle, boxR.Right, boxR.Bottom);
+                            layerCanvas.DrawText("Now", boxR.Right, boxR.Bottom, p);
+                        }
                     }
                 }
                 canvas.DrawBitmap(_layer, info.Rect);
@@ -116,11 +118,44 @@ namespace SkiaDemo1
             }
         }
 
-        private SKRect CalculateBitmapAspectRect()
+        private void GenerateRotatedBitmap()
         {
-            if (_bitmap == null)
+            if (_bitmap == null) {
+                _rotatedBM = null;
+                return;
+            }
+            int rotatedW;
+            int rotatedH;
+            switch(_rotationAngle) {
+            case 0:
+            case 180:
+                rotatedW = _bitmap.Width;
+                rotatedH = _bitmap.Height;
+                break;
+            case 90:
+            case 270:
+                rotatedW = _bitmap.Height;
+                rotatedH = _bitmap.Width;
+                break;
+            default:
+                rotatedW = rotatedH = 0;
+                break;
+            }
+            _rotatedBM = new SKBitmap(rotatedW, rotatedH);
+            using(SKCanvas bitmapCanvas = new SKCanvas(_rotatedBM)) {
+                bitmapCanvas.Clear();
+                bitmapCanvas.Translate(rotatedW / 2, rotatedH / 2);
+                bitmapCanvas.RotateDegrees(_rotationAngle);
+                bitmapCanvas.Translate(-_bitmap.Width / 2, -_bitmap.Height / 2);
+                bitmapCanvas.DrawBitmap(_bitmap, SKPoint.Empty);
+            }
+        }
+
+        private SKRect CalculateBitmapAspectRect(SKBitmap bitmap)
+        {
+            if (bitmap == null)
                 return (SKRect.Empty);
-            SKSize imgSize = new SKSize(_bitmap.Width, _bitmap.Height);
+            SKSize imgSize = new SKSize(bitmap.Width, bitmap.Height);
             return (SKRect.Create(_canvasV.CanvasSize.Width, _canvasV.CanvasSize.Height).AspectFit(imgSize));
         }
 
@@ -129,6 +164,9 @@ namespace SkiaDemo1
             _rotationAngle += 90;
             if (_rotationAngle == 360)
                 _rotationAngle = 0;
+            _m = SKMatrix.MakeIdentity();
+            _m.TryInvert(out _im);
+            GenerateRotatedBitmap();
             InvalidateLayer();
             _canvasV.InvalidateSurface();
         }
@@ -136,7 +174,7 @@ namespace SkiaDemo1
         private void HandleTapped(object sender, MR.Gestures.TapEventArgs tea)
         {
             SKPoint canvasPt = ToCanvasPt((float)tea.Center.X, (float)tea.Center.Y);
-            SKRect bitmapRect = CalculateBitmapAspectRect();
+            SKRect bitmapRect = CalculateBitmapAspectRect(_rotatedBM);
             //Check UL
             SKRect ulRect = new SKRect(bitmapRect.Left, bitmapRect.Top, bitmapRect.Left, bitmapRect.Top);
             ulRect.Inflate(ANNOTATION_CIRCLE_RADIUS, ANNOTATION_CIRCLE_RADIUS);
