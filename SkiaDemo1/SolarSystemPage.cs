@@ -11,7 +11,6 @@ namespace SkiaDemo1
 	public class SolarSystemPage : ContentPage
 	{
 		private SKCanvasView _canvasV = null;
-		private float _screenScale;
 		private SKBitmap _bitmap = null;
 		private int _rotationAngle = 0;
         private float _pulsateScale = 1f;
@@ -19,13 +18,6 @@ namespace SkiaDemo1
 
         public SolarSystemPage()
 		{
-#if __ANDROID__
-			_screenScale = ((Android.App.Activity)Forms.Context).Resources.DisplayMetrics.Density;
-#elif __IOS__
-            _screenScale = (float)UIKit.UIScreen.MainScreen.Scale;
-#else
-            _screenScale = 1;
-#endif
             Title = "Solar System";
 			_canvasV = new SKCanvasView();
 			_canvasV.PaintSurface += HandlePaintCanvas;

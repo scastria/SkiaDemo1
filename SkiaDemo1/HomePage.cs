@@ -26,7 +26,13 @@ namespace SkiaDemo1
 			primitivesC.Tapped += async delegate {
 				await Navigation.PushAsync(new PrimitivesPage());
 			};
-			TextCell taskAnimationC = new TextCell {
+            TextCell polyLabelC = new TextCell {
+                Text = "Polygon Label"
+            };
+            polyLabelC.Tapped += async delegate {
+                await Navigation.PushAsync(new PolyLabelPage());
+            };
+            TextCell taskAnimationC = new TextCell {
 				Text = "Task Animation"
 			};
 			taskAnimationC.Tapped += async delegate {
@@ -38,54 +44,36 @@ namespace SkiaDemo1
 			imageC.Tapped += async delegate {
 				await Navigation.PushAsync(new ImagePage());
 			};
-			TextCell imageInteractionC = new TextCell {
-				Text = "Image Interaction"
-			};
-			imageInteractionC.Tapped += async delegate {
-				await Navigation.PushAsync(new ImageInteractionPage());
-			};
-            TextCell touchManipC = new TextCell {
-                Text = "Touch Manipulation"
-            };
-            touchManipC.Tapped += async delegate {
-                await Navigation.PushAsync(new TouchManipulationPage());
-            };
             TextCell solarSystemC = new TextCell {
                 Text = "Solar System"
             };
             solarSystemC.Tapped += async delegate {
                 await Navigation.PushAsync(new SolarSystemPage());
             };
-			TextCell mrGesturesC = new TextCell {
-				Text = "Mr. Gestures Squares"
+            TextCell imageInteractionC = new TextCell {
+				Text = "Image Interaction"
 			};
-			mrGesturesC.Tapped += async delegate {
-				await Navigation.PushAsync(new MrGesturesSquaresPage());
+			imageInteractionC.Tapped += async delegate {
+				await Navigation.PushAsync(new ImageInteractionPage());
 			};
-			TextCell annotateFaceC = new TextCell {
-				Text = "Annotate Face"
-			};
-			annotateFaceC.Tapped += async delegate {
-				await Navigation.PushAsync(new AnnotateFacePage());
-			};
-			TextCell polyLabelC = new TextCell {
-				Text = "Polygon Label"
-			};
-			polyLabelC.Tapped += async delegate {
-				await Navigation.PushAsync(new PolyLabelPage());
-			};
-			TextCell layerPerformanceC = new TextCell {
-				Text = "Layer Performance"
-			};
-			layerPerformanceC.Tapped += async delegate {
-				await Navigation.PushAsync(new LayerPerformancePage());
-			};
-			TextCell transformFunC = new TextCell {
-				Text = "Transform Fun"
-			};
-			transformFunC.Tapped += async delegate {
-				await Navigation.PushAsync(new TransformFunPage());
-			};
+            TextCell annotateFaceC = new TextCell {
+                Text = "Annotate Face"
+            };
+            annotateFaceC.Tapped += async delegate {
+                await Navigation.PushAsync(new AnnotateFacePage());
+            };
+            TextCell layerPerformanceC = new TextCell {
+                Text = "Layer Performance"
+            };
+            layerPerformanceC.Tapped += async delegate {
+                await Navigation.PushAsync(new LayerPerformancePage());
+            };
+            TextCell touchManipC = new TextCell {
+                Text = "Touch Manipulation"
+            };
+            touchManipC.Tapped += async delegate {
+                await Navigation.PushAsync(new TouchManipulationPage());
+            };
 			TableView tableV = new TableView {
 				Intent = TableIntent.Menu,
 				Root = new TableRoot {
@@ -93,16 +81,14 @@ namespace SkiaDemo1
 						solidColorC,
 						rectangleC,
 						primitivesC,
-						taskAnimationC,
+                        polyLabelC,
+                        taskAnimationC,
 						imageC,
-						imageInteractionC,
-                        touchManipC,
                         solarSystemC,
-						mrGesturesC,
-						annotateFaceC,
-						polyLabelC,
-						layerPerformanceC,
-                        transformFunC
+                        imageInteractionC,
+                        annotateFaceC,
+                        layerPerformanceC,
+                        touchManipC
 					}
 				}
 			};

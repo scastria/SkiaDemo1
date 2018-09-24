@@ -1,17 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Diagnostics;
+using System.Reflection;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Plugin.EmbeddedResource;
 using SkiaSharp;
 using SkiaSharp.Views.Forms;
 using Xamarin.Forms;
-using System.Reflection;
-using System.Diagnostics;
 
 namespace SkiaDemo1
 {
-	public class PolyLabelPage : ContentPage
+    public class PolyLabelPage : ContentPage
 	{
 		private float[][][] _waterPoints = null;
 
@@ -36,49 +33,38 @@ namespace SkiaDemo1
 				p.TextSize = 20;
 				p.TextAlign = SKTextAlign.Center;
 				using (SKPath path = new SKPath()) {
-					//for (int i = 0; i < _waterPoints[0].Length; i++) {
-					//	if (i == (_waterPoints[0].Length - 1))
-					//		path.Close();
-					//	else {
-					//		SKPoint pt = new SKPoint(_waterPoints[0][i][0], _waterPoints[0][i][1]);
-					//		if (i == 0)
-					//			path.MoveTo(pt);
-					//		else
-					//			path.LineTo(pt);
-					//	}
-					//}
-					//path.MoveTo(100, 100);
-					//path.LineTo(500, 100);
-					//path.LineTo(500, 200);
-					//path.LineTo(200, 200);
-					//path.LineTo(200, 500);
-					//path.LineTo(100, 500);
-					path.MoveTo(174, 709);
-					path.LineTo(174, 933);
-					path.LineTo(449, 931);
-					path.LineTo(451, 711);
-					path.Close();
-					////I need to find the size of the path
-					//SKRect pathRect = path.TightBounds;
-					////I want to find the largest rectangle that can fit on my canvas maintaining the path's aspect ratio
-					////SkiaSharp added a builtin method for this based on code from me
-					//SKRect drawPathRect = canvasRect.AspectFit(pathRect.Size);
-					////Now I need to transform the path to draw within the drawPathRect
-					////First translate original path to its own origin
-					//SKMatrix firstTranslateM = SKMatrix.MakeTranslation(-pathRect.Left, -pathRect.Top);
-					////Next handle scaling.  Since I maintained aspect ratio, I should be able to use either
-					////width or height to figure out scaling factor
-					//float scalingFactor = drawPathRect.Width / pathRect.Width;
-					//SKMatrix scaleM = SKMatrix.MakeScale(scalingFactor, scalingFactor);
-					////Last I need to handle translation so path is centered on canvas
-					//SKMatrix secondTranslateM = SKMatrix.MakeTranslation(drawPathRect.Left, drawPathRect.Top);
-					////Now combine the translation, scaling, and translation into a single matrix by matrix multiplication/concatentation
-					//SKMatrix transformM = SKMatrix.MakeIdentity();
-					//SKMatrix.PostConcat(ref transformM, firstTranslateM);
-					//SKMatrix.PostConcat(ref transformM, scaleM);
-					//SKMatrix.PostConcat(ref transformM, secondTranslateM);
-					////Now apply the transform to the path
-					//path.Transform(transformM);
+					for (int i = 0; i < _waterPoints[0].Length; i++) {
+						if (i == (_waterPoints[0].Length - 1))
+							path.Close();
+						else {
+							SKPoint pt = new SKPoint(_waterPoints[0][i][0], _waterPoints[0][i][1]);
+							if (i == 0)
+								path.MoveTo(pt);
+							else
+								path.LineTo(pt);
+						}
+					}
+					//I need to find the size of the path
+					SKRect pathRect = path.TightBounds;
+					//I want to find the largest rectangle that can fit on my canvas maintaining the path's aspect ratio
+					//SkiaSharp added a builtin method for this based on code from me
+					SKRect drawPathRect = canvasRect.AspectFit(pathRect.Size);
+					//Now I need to transform the path to draw within the drawPathRect
+					//First translate original path to its own origin
+					SKMatrix firstTranslateM = SKMatrix.MakeTranslation(-pathRect.Left, -pathRect.Top);
+					//Next handle scaling.  Since I maintained aspect ratio, I should be able to use either
+					//width or height to figure out scaling factor
+					float scalingFactor = drawPathRect.Width / pathRect.Width;
+					SKMatrix scaleM = SKMatrix.MakeScale(scalingFactor, scalingFactor);
+					//Last I need to handle translation so path is centered on canvas
+					SKMatrix secondTranslateM = SKMatrix.MakeTranslation(drawPathRect.Left, drawPathRect.Top);
+					//Now combine the translation, scaling, and translation into a single matrix by matrix multiplication/concatentation
+					SKMatrix transformM = SKMatrix.MakeIdentity();
+					SKMatrix.PostConcat(ref transformM, firstTranslateM);
+					SKMatrix.PostConcat(ref transformM, scaleM);
+					SKMatrix.PostConcat(ref transformM, secondTranslateM);
+					//Now apply the transform to the path
+					path.Transform(transformM);
 					e.Surface.Canvas.DrawPath(path, p);
 					////Calculate poly label
 					float[][] ring = new float[path.PointCount][];

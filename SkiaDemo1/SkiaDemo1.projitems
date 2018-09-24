@@ -17,14 +17,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)TaskAnimationPage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ImagePage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ImageInteractionPage.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MrGesturesSquaresPage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AnnotateFacePage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BoolDrawModeValueConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PolyLabelPage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PolyLabel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PriorityQueue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LayerPerformancePage.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)TransformFunPage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SolarSystemPage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TouchManipulationPage.cs" />
   </ItemGroup>

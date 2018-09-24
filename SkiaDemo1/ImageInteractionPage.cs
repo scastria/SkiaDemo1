@@ -12,177 +12,89 @@ namespace SkiaDemo1
 	{
 		private SKCanvasView _canvasV = null;
 		private SKMatrix _m = SKMatrix.MakeIdentity();
-		private SKMatrix _r = SKMatrix.MakeIdentity();
-		private SKMatrix _startM = SKMatrix.MakeIdentity();
-		private bool _isPanZoom = false;
-		private Point _totalDistance;
-		private Point _startAnchorPt;
-		private double _totalScale;
-		private float _screenScale;
 		private SKBitmap _bitmap = null;
-		private SKRect _aspectRect;
-		private int _rotationAngle = 0;
+        private SKPoint _lastPanPt = SKPoint.Empty;
 
 		public ImageInteractionPage()
 		{
-#if __ANDROID__
-			_screenScale = ((Android.App.Activity)Forms.Context).Resources.DisplayMetrics.Density;
-#elif __IOS__
-            _screenScale = (float)UIKit.UIScreen.MainScreen.Scale;
-#else
-            _screenScale = 1;
-#endif
             Title = "Image Interaction";
-			ToolbarItem rotateTBI = new ToolbarItem {
-				Text = "Rotate"
-			};
-			rotateTBI.Clicked += HandleRotate;
-			ToolbarItems.Add(rotateTBI);
-			_canvasV = new SKCanvasView();
+            ToolbarItem resetTBI = new ToolbarItem {
+                Text = "Reset"
+            };
+            resetTBI.Clicked += HandleResetClicked;
+            ToolbarItems.Add(resetTBI);
+            _canvasV = new SKCanvasView();
 			_canvasV.PaintSurface += HandlePaintCanvas;
-			Grid mainG = new Grid();
-			mainG.Children.Add(_canvasV, 0, 0);
-			MR.Gestures.BoxView gestureV = new MR.Gestures.BoxView();
-			mainG.Children.Add(gestureV, 0, 0);
-			Content = mainG;
+			Content = _canvasV;
 			//Load assets
 			using (var stream = new SKManagedStream(ResourceLoader.GetEmbeddedResourceStream(this.GetType().GetTypeInfo().Assembly, "landscape.jpg"))) {
 				_bitmap = SKBitmap.Decode(stream);
 			}
-			//Interaction
-			//gestureV.Down += HandleDown;
-			//gestureV.Tapped += HandleTapped;
-			//gestureV.DoubleTapped += HandleDoubleTapped;
-			gestureV.LongPressing += HandleLongPressed;
-			gestureV.Panning += HandlePanning;
-			gestureV.Panned += HandlePanned;
-			gestureV.Pinching += HandlePinching;
-			gestureV.Pinched += HandlePinched;
-		}
+            //Interaction
+            PanGestureRecognizer pgr = new PanGestureRecognizer();
+            pgr.PanUpdated += HandlePan;
+            _canvasV.GestureRecognizers.Add(pgr);
+            PinchGestureRecognizer pngr = new PinchGestureRecognizer();
+            pngr.PinchUpdated += HandlePinch;
+            _canvasV.GestureRecognizers.Add(pngr);
+        }
 
-		private void HandleRotate(object sender, EventArgs e)
-		{
-			_rotationAngle += 90;
-			if (_rotationAngle == 360)
-				_rotationAngle = 0;
-			CalculateRotation();
-            CalculateBitmapAspect();
-			ResetZoom();
-		}
+        private void HandlePaintCanvas(object sender, SKPaintSurfaceEventArgs e)
+        {
+            SKImageInfo info = e.Info;
+            SKCanvas canvas = e.Surface.Canvas;
+            canvas.Clear();
+            SKRect bitmapRect = CalculateBitmapAspectRect(_bitmap);
+            canvas.SetMatrix(_m);
+            canvas.DrawBitmap(_bitmap, bitmapRect);
+        }
 
-		private void CalculateRotation()
-		{
-			_r = SKMatrix.MakeRotationDegrees(_rotationAngle);
-			switch (_rotationAngle) {
-			case 90:
-				_r.TransX = (float)Width * _screenScale;
-				break;
-			case 180:
-				_r.TransX = (float)Width * _screenScale;
-				_r.TransY = (float)Height * _screenScale;
-				break;
-			case 270:
-				_r.TransY = (float)Height * _screenScale;
-				break;
-			}
-		}
+        private SKRect CalculateBitmapAspectRect(SKBitmap bitmap)
+        {
+            if (bitmap == null)
+                return (SKRect.Empty);
+            SKSize imgSize = new SKSize(bitmap.Width, bitmap.Height);
+            return (SKRect.Create(_canvasV.CanvasSize.Width, _canvasV.CanvasSize.Height).AspectFit(imgSize));
+        }
 
-		protected override void OnSizeAllocated(double width, double height)
-		{
-			base.OnSizeAllocated(width, height);
-            CalculateRotation();
-			CalculateBitmapAspect();
-		}
+        private void HandleResetClicked(object sender, EventArgs e)
+        {
+            _m = SKMatrix.MakeIdentity();
+            _canvasV.InvalidateSurface();
+        }
 
-		private void ResetZoom()
-		{
-			_m = SKMatrix.MakeIdentity();
-			_canvasV.InvalidateSurface();
-		}
+        private void HandlePan(object sender, PanUpdatedEventArgs e)
+        {
+            switch (e.StatusType) {
+            case GestureStatus.Started:
+                _lastPanPt = ToUntransformedCanvasPt((float)e.TotalX, (float)e.TotalY);
+                break;
+            case GestureStatus.Running:
+                SKPoint panPt = ToUntransformedCanvasPt((float)e.TotalX, (float)e.TotalY);
+                SKPoint deltaTran = panPt - _lastPanPt;
+                _lastPanPt = panPt;
+                SKMatrix deltaM = SKMatrix.MakeTranslation(deltaTran.X, deltaTran.Y);
+                SKMatrix.PostConcat(ref _m, deltaM);
+                _canvasV.InvalidateSurface();
+                break;
+            }
+        }
 
-		private void CalculateBitmapAspect()
-		{
-			SKSize imgSize = new SKSize(_bitmap.Width, _bitmap.Height);
-			switch (_rotationAngle) {
-			case 0:
-			case 180:
-				_aspectRect = SKRect.Create((float)Width * _screenScale, (float)Height * _screenScale).AspectFit(imgSize);
-				break;
-			case 90:
-			case 270:
-				_aspectRect = SKRect.Create((float)Height * _screenScale, (float)Width * _screenScale).AspectFit(imgSize);
-				break;
-			}
-		}
+        private void HandlePinch(object sender, PinchGestureUpdatedEventArgs e)
+        {
+            switch (e.Status) {
+            case GestureStatus.Running:
+                SKPoint pivotPt = ToUntransformedCanvasPt((float)(e.ScaleOrigin.X * _canvasV.Width), (float)(e.ScaleOrigin.Y * _canvasV.Height));
+                SKMatrix deltaM = SKMatrix.MakeScale((float)e.Scale, (float)e.Scale, pivotPt.X, pivotPt.Y);
+                SKMatrix.PostConcat(ref _m, deltaM);
+                _canvasV.InvalidateSurface();
+                break;
+            }
+        }
 
-		private void HandleLongPressed(object sender, MR.Gestures.LongPressEventArgs lpea)
-		{
-			ResetZoom();
-		}
-
-		private void HandlePanning(object sender, MR.Gestures.PanEventArgs pea)
-		{
-			Debug.WriteLine("Panning: " + pea.Center);
-			if (!_isPanZoom) {
-				StartPanZoom(pea.Center);
-			}
-			if (_isPanZoom) {
-				//PanZoom
-				_totalDistance = pea.TotalDistance;
-				DoPanZoom(_startM, _startAnchorPt, _totalDistance, _totalScale);
-			}
-			_canvasV.InvalidateSurface();
-		}
-
-		private void HandlePanned(object sender, MR.Gestures.PanEventArgs pea)
-		{
-			Debug.WriteLine("Finish Pan");
-			_isPanZoom = false;
-		}
-
-		private void HandlePinching(object sender, MR.Gestures.PinchEventArgs pea)
-		{
-			if (!_isPanZoom)
-				StartPanZoom(pea.Center);
-			_totalScale = pea.TotalScale;
-			DoPanZoom(_startM, _startAnchorPt, _totalDistance, _totalScale);
-		}
-
-		private void HandlePinched(object sender, MR.Gestures.PinchEventArgs pea)
-		{
-			_isPanZoom = false;
-		}
-
-		private void StartPanZoom(Point viewPt)
-		{
-			_startM = _m;
-			_startAnchorPt = viewPt;
-			_totalDistance = Point.Zero;
-			_totalScale = 1;
-			_isPanZoom = true;
-		}
-
-		private void DoPanZoom(SKMatrix startM, Point anchorPt, Point totalTranslation, double totalScale)
-		{
-			Point canvasAnchorPt = new Point(anchorPt.X * _screenScale, anchorPt.Y * _screenScale);
-			Point totalCanvasTranslation = new Point(totalTranslation.X * _screenScale, totalTranslation.Y * _screenScale);
-			SKMatrix canvasTranslation = SKMatrix.MakeTranslation((float)totalCanvasTranslation.X, (float)totalCanvasTranslation.Y);
-			SKMatrix canvasScaling = SKMatrix.MakeScale((float)totalScale, (float)totalScale, (float)canvasAnchorPt.X, (float)canvasAnchorPt.Y);
-			SKMatrix canvasCombined = SKMatrix.MakeIdentity();
-			SKMatrix.Concat(ref canvasCombined, ref canvasTranslation, ref canvasScaling);
-			SKMatrix.Concat(ref _m, ref canvasCombined, ref startM);
-			//Debug.WriteLine("Trans: (" + _m.TransX + "," + _m.TransY + ")");
-			//Debug.WriteLine("Scale: (" + _m.ScaleX + "," + _m.ScaleY + ")");
-			_canvasV.InvalidateSurface();
-		}
-
-		private void HandlePaintCanvas(object sender, SKPaintSurfaceEventArgs e)
-		{
-			SKMatrix outM = SKMatrix.MakeIdentity();
-			SKMatrix.Concat(ref outM, ref _m, ref _r);
-			e.Surface.Canvas.SetMatrix(outM);
-			e.Surface.Canvas.Clear();
-			e.Surface.Canvas.DrawBitmap(_bitmap, _aspectRect);
-		}
-	}
+        private SKPoint ToUntransformedCanvasPt(float x, float y)
+        {
+            return (new SKPoint(x * _canvasV.CanvasSize.Width / (float)_canvasV.Width, y * _canvasV.CanvasSize.Height / (float)_canvasV.Height));
+        }
+    }
 }

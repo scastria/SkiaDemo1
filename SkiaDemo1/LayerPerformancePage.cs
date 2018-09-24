@@ -10,200 +10,198 @@ namespace SkiaDemo1
 {
 	public class LayerPerformancePage : ContentPage
 	{
-		private const string SELECTION_ANIMATION = "SelectionAnimation";
-		private const int ANIMATION_DURATION = 1000;
-
-        private const int CELL_DIM = 15;
+        private const bool USE_LAYER = false;
+        private const int CELL_DIM = 8;
 
 		private SKCanvasView _canvasV = null;
 		private SKMatrix _m = SKMatrix.MakeIdentity();
-		private SKMatrix _im = SKMatrix.MakeIdentity();
-		private SKMatrix _currentTransformM = SKMatrix.MakeIdentity();
-		private SKMatrix _startPanM = SKMatrix.MakeIdentity();
-		private SKMatrix _startPinchM = SKMatrix.MakeIdentity();
-		private Point _startPinchAnchor = Point.Zero;
-		private float _totalPinchScale = 1f;
-		private float _screenScale;
-		private SKBitmap _bitmap = null;
+        private SKMatrix _textLayerM = SKMatrix.MakeIdentity();
+        private SKBitmap _bitmap = null;
 		private SKBitmap _textLayer = null;
-        private bool _isSelected = false;
+        private bool _isPanZoom = false;
 
-		public LayerPerformancePage()
+        public LayerPerformancePage()
 		{
-#if __ANDROID__
-			_screenScale = ((Android.App.Activity)Forms.Context).Resources.DisplayMetrics.Density;
-#elif __IOS__
-            _screenScale = (float)UIKit.UIScreen.MainScreen.Scale;
-#else
-            _screenScale = 1;
-#endif
             Title = "Layer Performance";
-            ToolbarItem resetTBI = new ToolbarItem {
-                Text = "Reset"
-            };
-            resetTBI.Clicked += HandleReset;
-            ToolbarItems.Add(resetTBI);
 			_canvasV = new SKCanvasView();
 			_canvasV.PaintSurface += HandlePaintCanvas;
-			Content = _canvasV;
-			//Load assets
-			using (var stream = new SKManagedStream(ResourceLoader.GetEmbeddedResourceStream(this.GetType().GetTypeInfo().Assembly, "landscape.jpg"))) {
+            Grid mainG = new Grid();
+            mainG.Children.Add(_canvasV, 0, 0);
+            MR.Gestures.BoxView gestureV = new MR.Gestures.BoxView();
+            mainG.Children.Add(gestureV, 0, 0);
+            Content = mainG;
+            //Load assets
+            using (var stream = new SKManagedStream(ResourceLoader.GetEmbeddedResourceStream(this.GetType().GetTypeInfo().Assembly, "landscape.jpg"))) {
 				_bitmap = SKBitmap.Decode(stream);
 			}
-			//Interaction
-			PanGestureRecognizer pgr = new PanGestureRecognizer();
-			pgr.PanUpdated += HandlePan;
-			_canvasV.GestureRecognizers.Add(pgr);
-			PinchGestureRecognizer pngr = new PinchGestureRecognizer();
-			pngr.PinchUpdated += HandlePinch;
-			_canvasV.GestureRecognizers.Add(pngr);
-            TapGestureRecognizer tgr = new TapGestureRecognizer();
-            tgr.Tapped += HandleTap;
-            _canvasV.GestureRecognizers.Add(tgr);
+            //Interaction
+            gestureV.LongPressing += HandleLongPressed;
+            gestureV.Panning += HandlePanning;
+            gestureV.Panned += HandlePanned;
+            gestureV.Pinching += HandlePinching;
+            gestureV.Pinched += HandlePinched;
+            gestureV.Rotating += HandleRotating;
+            gestureV.Rotated += HandleRotated;
         }
 
         private void HandlePaintCanvas(object sender, SKPaintSurfaceEventArgs e)
-		{
-			SKCanvas canvas = e.Surface.Canvas;
-			SKImageInfo info = e.Info;
-			canvas.Clear();
-			//Background layer
-			using (new SKAutoCanvasRestore(canvas)) {
-				canvas.SetMatrix(_m);
-				SKSize imgSize = new SKSize(_bitmap.Width, _bitmap.Height);
-				SKRect aspectRect = SKRect.Create(info.Width, info.Height).AspectFit(imgSize);
-				canvas.DrawBitmap(_bitmap, aspectRect);
-			}
-			//Text layer
-			if (_textLayer == null) {
-				_textLayer = new SKBitmap(info);
-				using (SKCanvas layerCanvas = new SKCanvas(_textLayer)) {
-					layerCanvas.Clear();
-					layerCanvas.SetMatrix(_m);
-					using (var paint = new SKPaint()) {
-						paint.TextSize = 10;
-						paint.Color = (_isSelected) ? SKColors.Yellow : SKColors.Red;
-						paint.IsAntialias = true;
-						paint.Style = SKPaintStyle.Fill;
-						paint.TextAlign = SKTextAlign.Center;
-						float curX = 0;
-						float curY = 0;
-						while (curX < info.Width) {
-							while (curY < info.Height) {
-								SKRect cell = new SKRect(curX, curY, curX + CELL_DIM, curY + CELL_DIM);
-								layerCanvas.DrawText("Hi", cell.MidX, cell.MidY, paint);
-								curY += CELL_DIM;
-							}
-							curY = 0;
-							curX += CELL_DIM;
-						}
-					}
-				}
-				canvas.DrawBitmap(_textLayer, info.Rect);
-			} else {
-				using (new SKAutoCanvasRestore(canvas)) {
-					canvas.SetMatrix(_currentTransformM);
-					canvas.DrawBitmap(_textLayer, info.Rect);
-				}
-			}
-		}
-
-        private void InvalidateLayer()
         {
-            _textLayer?.Dispose();
-            _textLayer = null;
-            _currentTransformM = SKMatrix.MakeIdentity();
+            SKImageInfo info = e.Info;
+            SKCanvas canvas = e.Surface.Canvas;
+            canvas.Clear();
+            //Background layer
+            SKRect bitmapRect = CalculateBitmapAspectRect(_bitmap);
+            using (new SKAutoCanvasRestore(canvas)) {
+                canvas.SetMatrix(_m);
+                canvas.DrawBitmap(_bitmap, bitmapRect);
+            }
+            //Text layer
+            if (!USE_LAYER) {
+                using (new SKAutoCanvasRestore(canvas)) {
+                    canvas.SetMatrix(_m);
+                    using (SKPaint p = new SKPaint { TextSize = 5, Color = SKColors.Red, IsAntialias = true, Style = SKPaintStyle.Fill, TextAlign = SKTextAlign.Center }) {
+                        for (int offset = 0; offset < 10; offset++) {
+                            float curX = offset;
+                            float curY = offset;
+                            while (curX < info.Width) {
+                                while (curY < info.Height) {
+                                    SKRect cell = new SKRect(curX, curY, curX + CELL_DIM, curY + CELL_DIM);
+                                    canvas.DrawText("Hi", cell.MidX, cell.MidY, p);
+                                    curY += CELL_DIM;
+                                }
+                                curY = offset;
+                                curX += CELL_DIM;
+                            }
+                        }
+                    }
+                }
+            } else {
+                if (_textLayer == null) {
+                    _textLayer = new SKBitmap(info);
+                    using (SKCanvas layerCanvas = new SKCanvas(_textLayer)) {
+                        layerCanvas.Clear();
+                        layerCanvas.SetMatrix(_m);
+                        using (SKPaint p = new SKPaint { TextSize = 5, Color = SKColors.Red, IsAntialias = true, Style = SKPaintStyle.Fill, TextAlign = SKTextAlign.Center }) {
+                            for (int offset = 0; offset < 10; offset++) {
+                                float curX = offset;
+                                float curY = offset;
+                                while (curX < info.Width) {
+                                    while (curY < info.Height) {
+                                        SKRect cell = new SKRect(curX, curY, curX + CELL_DIM, curY + CELL_DIM);
+                                        layerCanvas.DrawText("Hi", cell.MidX, cell.MidY, p);
+                                        curY += CELL_DIM;
+                                    }
+                                    curY = offset;
+                                    curX += CELL_DIM;
+                                }
+                            }
+                        }
+                    }
+                    canvas.DrawBitmap(_textLayer, info.Rect);
+                } else {
+                    using (new SKAutoCanvasRestore(canvas)) {
+                        canvas.SetMatrix(_textLayerM);
+                        canvas.DrawBitmap(_textLayer, info.Rect);
+                    }
+                }
+            }
         }
 
-        private void HandlePan(object sender, PanUpdatedEventArgs puea)
-		{
-			Debug.WriteLine(puea.StatusType + " (" + puea.TotalX + "," + puea.TotalY + ")");
-			switch (puea.StatusType) {
-			case GestureStatus.Started:
-				_startPanM = _m;
-				break;
-			case GestureStatus.Running:
-				float canvasTotalX = (float)puea.TotalX * _screenScale;
-				float canvasTotalY = (float)puea.TotalY * _screenScale;
-				SKMatrix canvasTranslation = SKMatrix.MakeTranslation(canvasTotalX, canvasTotalY);
-				SKMatrix.Concat(ref _m, ref canvasTranslation, ref _startPanM);
-				_currentTransformM = canvasTranslation;
-				_canvasV.InvalidateSurface();
-				break;
-			default:
-				_startPanM = SKMatrix.MakeIdentity();
-				//Update inverse
-				_m.TryInvert(out _im);
-                InvalidateLayer();
-                _canvasV.InvalidateSurface();
-				break;
-			}
-		}
-
-		private void HandlePinch(object sender, PinchGestureUpdatedEventArgs puea)
-		{
-			Debug.WriteLine(puea.Status + " (" + puea.ScaleOrigin.X + "," + puea.ScaleOrigin.Y + ") " + puea.Scale);
-			Point canvasAnchor = new Point(puea.ScaleOrigin.X * _canvasV.Width * _screenScale,
-										   puea.ScaleOrigin.Y * _canvasV.Height * _screenScale);
-			switch (puea.Status) {
-			case GestureStatus.Started:
-				_startPinchM = _m;
-				_startPinchAnchor = canvasAnchor;
-				_totalPinchScale = 1f;
-				break;
-			case GestureStatus.Running:
-				_totalPinchScale *= (float)puea.Scale;
-				SKMatrix canvasScaling = SKMatrix.MakeScale(_totalPinchScale, _totalPinchScale, (float)_startPinchAnchor.X, (float)_startPinchAnchor.Y);
-				SKMatrix.Concat(ref _m, ref canvasScaling, ref _startPinchM);
-				_currentTransformM = canvasScaling;
-				_canvasV.InvalidateSurface();
-				break;
-			default:
-				_startPinchM = SKMatrix.MakeIdentity();
-				_startPinchAnchor = Point.Zero;
-				_totalPinchScale = 1f;
-				//Update inverse
-				_m.TryInvert(out _im);
-                InvalidateLayer();
-                _canvasV.InvalidateSurface();
-                break;
-			}
-		}
-
-        private void HandleTap(object sender, EventArgs e)
+        private SKRect CalculateBitmapAspectRect(SKBitmap bitmap)
         {
-            _isSelected = !_isSelected;
-            InvalidateLayer();
+            if (bitmap == null)
+                return (SKRect.Empty);
+            SKSize imgSize = new SKSize(bitmap.Width, bitmap.Height);
+            return (SKRect.Create(_canvasV.CanvasSize.Width, _canvasV.CanvasSize.Height).AspectFit(imgSize));
+        }
+
+        private void InvalidateLayers()
+        {
+            if (_textLayer != null) {
+                _textLayer.Dispose();
+                _textLayer = null;
+            }
+            _textLayerM = SKMatrix.MakeIdentity();
+        }
+
+        private void HandleLongPressed(object sender, MR.Gestures.LongPressEventArgs e)
+        {
+            _m = SKMatrix.MakeIdentity();
+            InvalidateLayers();
             _canvasV.InvalidateSurface();
         }
 
-        private void HandleReset(object sender, EventArgs e)
+        private void HandlePanning(object sender, MR.Gestures.PanEventArgs pea)
         {
-			//Animate transition to identity transform
-			float startTransX = _m.TransX;
-			float startTransY = _m.TransY;
-			float startScale = _m.ScaleX;
-			float endTransX = 0;
-			float endTransY = 0;
-			float endScale = 1;
-			float totalTransX = endTransX - startTransX;
-			float totalTransY = endTransY - startTransY;
-			float totalScale = endScale - startScale;
-			new Animation(percent => {
-				float newTransX = totalTransX * (float)percent + startTransX;
-				float newTransY = totalTransY * (float)percent + startTransY;
-				float newScale = totalScale * (float)percent + startScale;
-				_m.TransX = newTransX;
-				_m.TransY = newTransY;
-				_m.ScaleX = newScale;
-				_m.ScaleY = newScale;
-                SKMatrix.Concat(ref _currentTransformM, ref _im, ref _m);
-				_canvasV.InvalidateSurface();
-			}).Commit(this, SELECTION_ANIMATION, length: ANIMATION_DURATION, easing: Easing.SinInOut, finished: (percent, isCanceled) => {
-				_m.TryInvert(out _im);
-                InvalidateLayer();
-                _canvasV.InvalidateSurface();
-			});
-		}
+            float deltaX = (float)pea.DeltaDistance.X;
+            float deltaY = (float)pea.DeltaDistance.Y;
+            if (!_isPanZoom) {
+                _isPanZoom = true;
+                _textLayerM = SKMatrix.MakeIdentity();
+            }
+            SKPoint deltaTran = ToUntransformedCanvasPt(deltaX, deltaY);
+            SKMatrix deltaM = SKMatrix.MakeTranslation(deltaTran.X, deltaTran.Y);
+            SKMatrix.PostConcat(ref _m, deltaM);
+            SKMatrix.PostConcat(ref _textLayerM, deltaM);
+            _canvasV.InvalidateSurface();
+        }
+
+        private void HandlePanned(object sender, MR.Gestures.PanEventArgs pea)
+        {
+            _isPanZoom = false;
+            InvalidateLayers();
+            _canvasV.InvalidateSurface();
+        }
+
+        private void HandlePinching(object sender, MR.Gestures.PinchEventArgs pea)
+        {
+            float pivotX = (float)pea.Center.X;
+            float pivotY = (float)pea.Center.Y;
+            float deltaScale = (float)pea.DeltaScale;
+            if (!_isPanZoom) {
+                _isPanZoom = true;
+                _textLayerM = SKMatrix.MakeIdentity();
+            }
+            SKPoint pivotPt = ToUntransformedCanvasPt(pivotX, pivotY);
+            SKMatrix deltaM = SKMatrix.MakeScale(deltaScale, deltaScale, pivotPt.X, pivotPt.Y);
+            SKMatrix.PostConcat(ref _m, deltaM);
+            SKMatrix.PostConcat(ref _textLayerM, deltaM);
+            _canvasV.InvalidateSurface();
+        }
+
+        private void HandlePinched(object sender, MR.Gestures.PinchEventArgs pea)
+        {
+            _isPanZoom = false;
+            InvalidateLayers();
+            _canvasV.InvalidateSurface();
+        }
+
+        private void HandleRotating(object sender, MR.Gestures.RotateEventArgs rea)
+        {
+            float pivotX = (float)rea.Center.X;
+            float pivotY = (float)rea.Center.Y;
+            float deltaAngle = (float)rea.DeltaAngle;
+            if (!_isPanZoom) {
+                _isPanZoom = true;
+                _textLayerM = SKMatrix.MakeIdentity();
+            }
+            SKPoint pivotPt = ToUntransformedCanvasPt(pivotX, pivotY);
+            SKMatrix deltaM = SKMatrix.MakeRotationDegrees(deltaAngle, pivotPt.X, pivotPt.Y);
+            SKMatrix.PostConcat(ref _m, deltaM);
+            SKMatrix.PostConcat(ref _textLayerM, deltaM);
+            _canvasV.InvalidateSurface();
+        }
+
+        private void HandleRotated(object sender, MR.Gestures.RotateEventArgs rea)
+        {
+            _isPanZoom = false;
+            InvalidateLayers();
+            _canvasV.InvalidateSurface();
+        }
+
+        private SKPoint ToUntransformedCanvasPt(float x, float y)
+        {
+            return (new SKPoint(x * _canvasV.CanvasSize.Width / (float)_canvasV.Width, y * _canvasV.CanvasSize.Height / (float)_canvasV.Height));
+        }
     }
 }
