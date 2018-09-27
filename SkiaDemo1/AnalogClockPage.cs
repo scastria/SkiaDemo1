@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Diagnostics;
-using Plugin.EmbeddedResource;
 using SkiaSharp;
 using SkiaSharp.Views.Forms;
 using Xamarin.Forms;
-using System.Reflection;
 
 namespace SkiaDemo1
 {
-	public class AnalogClockPage : ContentPage
+    public class AnalogClockPage : ContentPage
 	{
 		private SKCanvasView _canvasV = null;
         private bool _pageIsActive = false;
@@ -27,12 +24,18 @@ namespace SkiaDemo1
             SKCanvas canvas = e.Surface.Canvas;
             canvas.Clear();
             using (SKPaint sp = new SKPaint { Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round }) {
-                using (SKPaint fp = new SKPaint { Style = SKPaintStyle.Fill, Color = SKColors.Gray }) {
+                using (SKPaint fp = new SKPaint { Style = SKPaintStyle.Fill }) {
+
                     // Transform for 100-radius circle centered at origin
                     canvas.Translate(info.Width / 2f, info.Height / 2f);
-                    canvas.Scale(Math.Min(info.Width / 200f, info.Height / 200f));
+                    canvas.Scale(Math.Min(info.Width / 210f, info.Height / 520f));
+
+                    //background
+                    fp.Color = SKColors.LightGray;
+                    canvas.DrawCircle(0, 0, 100, fp);
 
                     // Hour and minute marks
+                    fp.Color = SKColors.Gray;
                     for (int angle = 0; angle < 360; angle += 6) {
                         canvas.DrawCircle(0, -90, angle % 30 == 0 ? 4 : 2, fp);
                         canvas.RotateDegrees(6);
@@ -63,6 +66,15 @@ namespace SkiaDemo1
                         canvas.RotateDegrees(6 * (nowDT.Second + nowDT.Millisecond / 1000f));
                         canvas.DrawLine(0, 10, 0, -80, sp);
                     }
+
+                    float t = (float)Math.Sin((nowDT.Second % 2 + nowDT.Millisecond / 1000f) * Math.PI);
+                    SKPath tailP = new SKPath();
+                    tailP.MoveTo(0, 100);
+                    SKPoint pt1 = new SKPoint(-50 * t, 200);
+                    SKPoint pt2 = new SKPoint(0, 250 - Math.Abs(50 * t));
+                    SKPoint pt3 = new SKPoint(50 * t, 250 - Math.Abs(75 * t));
+                    tailP.CubicTo(pt1, pt2, pt3);
+                    canvas.DrawPath(tailP, sp);
                 }
             }
         }

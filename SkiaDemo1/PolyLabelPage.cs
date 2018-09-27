@@ -26,12 +26,7 @@ namespace SkiaDemo1
 		{
 			SKRect canvasRect = SKRect.Create(e.Info.Size);
 			e.Surface.Canvas.DrawColor(SKColors.White);
-			using (SKPaint p = new SKPaint()) {
-				p.Color = SKColors.Black;
-				p.IsAntialias = true;
-				p.Style = SKPaintStyle.Stroke;
-				p.TextSize = 20;
-				p.TextAlign = SKTextAlign.Center;
+            using (SKPaint p = new SKPaint { Color = SKColors.Black, IsAntialias = true, Style = SKPaintStyle.Stroke, TextSize = 20, TextAlign = SKTextAlign.Center }) {
 				using (SKPath path = new SKPath()) {
 					for (int i = 0; i < _waterPoints[0].Length; i++) {
 						if (i == (_waterPoints[0].Length - 1))

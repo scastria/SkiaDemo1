@@ -19,9 +19,8 @@ namespace SkiaDemo1
 		{
 			SKSizeI canvasSize = e.Info.Size;
 			e.Surface.Canvas.DrawColor(SKColors.Yellow);
-			using (SKPaint p = new SKPaint()) {
+            using (SKPaint p = new SKPaint { IsAntialias = true }) {
 				p.Color = SKColors.Blue;
-				p.IsAntialias = true;
 				p.Style = SKPaintStyle.Fill;
 				e.Surface.Canvas.DrawCircle(100, 100, 75, p);
 				p.Color = SKColors.Brown;

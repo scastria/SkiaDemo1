@@ -19,10 +19,7 @@ namespace SkiaDemo1
 		{
 			SKSizeI canvasSize = e.Info.Size;
 			e.Surface.Canvas.DrawColor(SKColors.LightGreen);
-			using (SKPaint p = new SKPaint()) {
-				p.Color = SKColors.Blue;
-				p.IsAntialias = true;
-				p.Style = SKPaintStyle.Fill;
+            using (SKPaint p = new SKPaint { Color = SKColors.Blue, IsAntialias = true, Style = SKPaintStyle.Fill }) {
 				e.Surface.Canvas.DrawRect(new SKRect(canvasSize.Width / 3, canvasSize.Height / 3, canvasSize.Width * 2 / 3, canvasSize.Height * 2 / 3),p);
 			}
 		}
