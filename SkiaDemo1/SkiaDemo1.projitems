@@ -25,6 +25,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)LayerPerformancePage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SolarSystemPage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TouchManipulationPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AnalogClockPage.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)landscape.jpg" />

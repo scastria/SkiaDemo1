@@ -38,7 +38,13 @@ namespace SkiaDemo1
 			taskAnimationC.Tapped += async delegate {
 				await Navigation.PushAsync(new TaskAnimationPage());
 			};
-			TextCell imageC = new TextCell {
+            TextCell analogClockC = new TextCell {
+                Text = "Analog Clock"
+            };
+            analogClockC.Tapped += async delegate {
+                await Navigation.PushAsync(new AnalogClockPage());
+            };
+            TextCell imageC = new TextCell {
 				Text = "Image"
 			};
 			imageC.Tapped += async delegate {
@@ -83,6 +89,7 @@ namespace SkiaDemo1
 						primitivesC,
                         polyLabelC,
                         taskAnimationC,
+                        analogClockC,
 						imageC,
                         solarSystemC,
                         imageInteractionC,

@@ -65,12 +65,12 @@ namespace SkiaDemo1
 
         private void HandlePan(object sender, PanUpdatedEventArgs e)
         {
+            SKPoint panPt = ToUntransformedCanvasPt((float)e.TotalX, (float)e.TotalY);
             switch (e.StatusType) {
             case GestureStatus.Started:
-                _lastPanPt = ToUntransformedCanvasPt((float)e.TotalX, (float)e.TotalY);
+                _lastPanPt = panPt;
                 break;
             case GestureStatus.Running:
-                SKPoint panPt = ToUntransformedCanvasPt((float)e.TotalX, (float)e.TotalY);
                 SKPoint deltaTran = panPt - _lastPanPt;
                 _lastPanPt = panPt;
                 SKMatrix deltaM = SKMatrix.MakeTranslation(deltaTran.X, deltaTran.Y);
